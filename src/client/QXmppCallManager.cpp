@@ -46,7 +46,7 @@ class QXmppCallPrivate
 public:
     class Stream {
     public:
-        QXmppRtpChannel *channel;
+        //QXmppRtpChannel *channel;
         QXmppIceConnection *connection;
         QString creator;
         QString media;
