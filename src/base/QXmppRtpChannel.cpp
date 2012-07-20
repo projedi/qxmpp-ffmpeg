@@ -860,6 +860,7 @@ QXmppRtpVideoChannelPrivate::QXmppRtpVideoChannelPrivate()
 
 /// Constructs a new RTP video channel with the given \a parent.
 
+//TODO: Add the ability to change the preferred codecs order
 QXmppRtpVideoChannel::QXmppRtpVideoChannel(QObject *parent)
     : QXmppLoggable(parent)
 {
@@ -890,6 +891,17 @@ QXmppRtpVideoChannel::QXmppRtpVideoChannel(QObject *parent)
     encoder->setFormat(d->outgoingFormat);
     payload.setId(97);
     payload.setName("theora");
+    payload.setClockrate(90000);
+    payload.setParameters(encoder->parameters());
+    m_outgoingPayloadTypes << payload;
+    delete encoder;
+#endif
+
+#ifdef QXMPP_USE_H264
+    encoder = new QXmppH264Encoder;
+    encoder->setFormat(d->outgoingFormat);
+    payload.setId(98);
+    payload.setName("h264");
     payload.setClockrate(90000);
     payload.setParameters(encoder->parameters());
     m_outgoingPayloadTypes << payload;
@@ -984,6 +996,10 @@ void QXmppRtpVideoChannel::payloadTypesChanged()
         else if (payload.name().toLower() == "vp8")
             decoder = new QXmppVpxDecoder;
 #endif
+#ifdef QXMPP_USE_H264
+        else if (payload.name().toLower() == "h264")
+            decoder = new QXmppH264Decoder;
+#endif
         if (decoder) {
             decoder->setParameters(payload.parameters());
             d->decoders.insert(payload.id(), decoder);
@@ -1004,9 +1020,12 @@ void QXmppRtpVideoChannel::payloadTypesChanged()
             encoder = new QXmppTheoraEncoder;
 #endif
 #ifdef QXMPP_USE_VPX
-        else if (payload.name().toLower() == "vp8") {
+        else if (payload.name().toLower() == "vp8")
             encoder = new QXmppVpxEncoder;
-        }
+#endif
+#ifdef QXMPP_USE_H264
+        else if (payload.name().toLower() == "h264")
+            encoder = new QXmppH264Encoder;
 #endif
         if (encoder) {
             encoder->setFormat(d->outgoingFormat);

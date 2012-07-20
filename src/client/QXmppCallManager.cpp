@@ -33,6 +33,10 @@
 #include "QXmppStun.h"
 #include "QXmppUtils.h"
 
+extern "C" {
+#include <libavcodec/avcodec.h>
+}
+
 static int typeId = qRegisterMetaType<QXmppCall::State>();
 
 static const int RTP_COMPONENT = 1;
@@ -760,6 +764,7 @@ QXmppCall *QXmppCallManagerPrivate::findCall(const QString &sid, QXmppCall::Dire
 
 QXmppCallManager::QXmppCallManager()
 {
+    avcodec_register_all();
     d = new QXmppCallManagerPrivate(this);
 }
 

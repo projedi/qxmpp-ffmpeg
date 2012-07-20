@@ -25,6 +25,11 @@ LIBS += $$QXMPP_INTERNAL_LIBS
     LIBS += -lvpx
 }
 
+!isEmpty(QXMPP_USE_H264) {
+    DEFINES += QXMPP_USE_H264
+    LIBS += -lavcodec
+}
+
 # Target definition
 TARGET = $$QXMPP_LIBRARY_NAME
 VERSION = $$QXMPP_VERSION

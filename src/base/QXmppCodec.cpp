@@ -43,12 +43,19 @@
 #include <theora/theoraenc.h>
 #endif
 
+
 #ifdef QXMPP_USE_VPX
 #define VPX_CODEC_DISABLE_COMPAT 1
 #include <vpx/vpx_decoder.h>
 #include <vpx/vpx_encoder.h>
 #include <vpx/vp8cx.h>
 #include <vpx/vp8dx.h>
+#endif
+
+#ifdef QXMPP_USE_H264
+extern "C" {
+#include <libavcodec/avcodec.h>
+}
 #endif
 
 #define BIAS        (0x84)  /* Bias for linear code. */
@@ -1232,5 +1239,10 @@ QMap<QString, QString> QXmppVpxEncoder::parameters() const
 {
     return QMap<QString, QString>();
 }
+
+#endif
+
+//TODO: Implement
+#ifdef QXMPP_USE_H264
 
 #endif

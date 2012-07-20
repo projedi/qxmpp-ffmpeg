@@ -210,4 +210,37 @@ private:
 };
 #endif
 
+#ifdef QXMPP_USE_H264
+class QXmppH264DecoderPrivate;
+class QXmppH264EncoderPrivate;
+
+class QXMPP_EXPORT QXmppH264Decoder : public QXmppVideoDecoder
+{
+public:
+    QXmppH264Decoder();
+    ~QXmppH264Decoder();
+
+    QXmppVideoFormat format() const;
+    QList<QXmppVideoFrame> handlePacket(const QXmppRtpPacket &packet);
+    bool setParameters(const QMap<QString, QString> &parameters);
+
+private:
+    QXmppH264DecoderPrivate *d;
+};
+
+class QXMPP_EXPORT QXmppH264Encoder : public QXmppVideoEncoder
+{
+public:
+    QXmppH264Encoder();
+    ~QXmppH264Encoder();
+
+    bool setFormat(const QXmppVideoFormat &format);
+    QList<QByteArray> handleFrame(const QXmppVideoFrame &frame);
+    QMap<QString, QString> parameters() const;
+
+private:
+    QXmppH264EncoderPrivate *d;
+};
+#endif
+
 #endif
