@@ -1325,7 +1325,11 @@ QXmppH264Encoder::~QXmppH264Encoder() { delete d; }
 //TODO: Properly recreate codec
 bool QXmppH264Encoder::setFormat(const QXmppVideoFormat &format)
 {
+    qDebug() << "Setting format";
+    d->codec = avcodec_find_encoder(CODEC_ID_H264);
+    qDebug() << "Finding encoder";
     d->codecContext = avcodec_alloc_context3(d->codec);
+    qDebug() << "Allocated context";
     d->codecContext->pix_fmt = PIX_FMT_YUV420P;
     d->codecContext->width = format.frameWidth();
     d->codecContext->height = format.frameHeight();
