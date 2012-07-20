@@ -48,7 +48,7 @@ contains(QXMPP_LIBRARY_TYPE,staticlib) {
 
 # Installation prefix and library directory
 isEmpty(PREFIX) {
-    unix:PREFIX=/usr/local/x86_64-unknown-linux-gnu
+    unix:PREFIX=/usr/local
 }
 isEmpty(LIBDIR) {
     LIBDIR=lib

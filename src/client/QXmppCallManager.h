@@ -40,10 +40,8 @@ class QXmppJingleCandidate;
 class QXmppJingleIq;
 class QXmppJinglePayloadType;
 class QXmppPresence;
-class QVideoCodec;
-class QAudioCodec;
-//class QXmppRtpAudioChannel;
-//class QXmppRtpVideoChannel;
+class QXmppRtpAudioChannel;
+class QXmppRtpVideoChannel;
 
 /// \brief The QXmppCall class represents a Voice-Over-IP call to a remote party.
 ///
@@ -87,14 +85,10 @@ public:
     QString sid() const;
     QXmppCall::State state() const;
 
-    //QXmppRtpAudioChannel *audioChannel() const;
+    QXmppRtpAudioChannel *audioChannel() const;
     QIODevice::OpenMode audioMode() const;
-    //QXmppRtpVideoChannel *videoChannel() const;
+    QXmppRtpVideoChannel *videoChannel() const;
     QIODevice::OpenMode videoMode() const;
-    OutputStream *audioOutput() const;
-    OutputStream *videoOutput() const;
-    InputStream *audioInput() const;
-    InputStream *videoInput() const;
 
 signals:
     /// \brief This signal is emitted when a call is connected.
@@ -174,9 +168,6 @@ public:
     void setTurnServer(const QHostAddress &host, quint16 port = 3478);
     void setTurnUser(const QString &user);
     void setTurnPassword(const QString &password);
-    
-    void setSupportedVideoCodecs(QList<QVideoCodec>);
-    void setSupportedAudioCodecs(QList<QAudioCodec>);
 
     /// \cond
     QStringList discoveryFeatures() const;
