@@ -3,9 +3,9 @@ include(qxmpp.pri)
 TEMPLATE = subdirs
 
 SUBDIRS = src \
-          tests \
-          examples \
-          doc
+          #tests \
+          #examples \
+          #doc
 
 CONFIG += ordered
 

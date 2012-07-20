@@ -25,10 +25,12 @@ LIBS += $$QXMPP_INTERNAL_LIBS
     LIBS += -lvpx
 }
 
-!isEmpty(QXMPP_USE_H264) {
+#!isEmpty(QXMPP_USE_H264) {
     DEFINES += QXMPP_USE_H264 __STDC_CONSTANT_MACROS
-    LIBS += -lavcodec
-}
+    win32: LIBS += -L$$PWD/3rd-party/lib
+    win32: INCLUDEPATH += $$PWD/3rd-party/include
+    LIBS += -lavcodec -lavutil
+#}
 
 # Target definition
 TARGET = $$QXMPP_LIBRARY_NAME
