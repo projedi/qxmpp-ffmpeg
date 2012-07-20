@@ -1242,7 +1242,125 @@ QMap<QString, QString> QXmppVpxEncoder::parameters() const
 
 #endif
 
-//TODO: Implement
 #ifdef QXMPP_USE_H264
+
+class QXmppH264DecoderPrivate
+{
+public:
+   int bitrate;
+   AVCodec* codec;
+   AVCodecContext* codecContext;
+};
+
+//TODO: move ffmpeg initialization here
+QXmppH264Decoder::QXmppH264Decoder()
+{
+    d = new QXmppH264DecoderPrivate;
+    d->codec = avcodec_find_decoder(CODEC_ID_H264);
+    d->codecContext = avcodec_alloc_context3(d->codec);
+    if(avcodec_open2(d->codecContext,d->codec,0) < 0) {
+        qWarning("Couldn't initialize h264 decoder");
+    }
+}
+
+QXmppH264Decoder::~QXmppH264Decoder()
+{
+    avcodec_close(d->codecContext);
+    delete d;
+}
+
+//TODO: Properly get values from codec context
+QXmppVideoFormat QXmppH264Decoder::format() const
+{
+    QXmppVideoFormat format;
+    format.setFrameRate(15.0);
+    format.setFrameSize(QSize(320, 240));
+    format.setPixelFormat(QXmppVideoFrame::Format_YUV420P);
+    return format;
+}
+
+QList<QXmppVideoFrame> QXmppH264Decoder::handlePacket(const QXmppRtpPacket &packet)
+{
+   QList<QXmppVideoFrame> frameList;
+   AVPacket* pkt = new AVPacket;
+   av_init_packet(pkt);
+   //TODO: Timestamps?
+   pkt->size = packet.payload.size();
+   pkt->data = (uchar*) packet.payload.data();
+   AVFrame* frame = avcodec_alloc_frame();
+   int got_picture = 0;
+   if(avcodec_decode_video2(d->codecContext,frame,&got_picture,pkt) < 0) {
+      return frameList;
+   }
+   if(!got_picture) { av_free_packet(pkt); return frameList; }
+   QXmppVideoFrame qframe( frame->linesize[0]*frame->height
+                         , QSize(frame->width,frame->height), frame->linesize[0]
+                         , QXmppVideoFrame::Format_YUV420P);
+   uchar* data = qframe.bits();
+   memcpy(data,frame->data[0],frame->linesize[0]*frame->height);
+   frameList << qframe;
+   av_free(frame);
+   av_free_packet(pkt);
+   return frameList;
+}
+
+bool QXmppH264Decoder::setParameters(const QMap<QString, QString> &parameters)
+{
+    return true;
+}
+
+class QXmppH264EncoderPrivate
+{
+public:
+   int bitrate;
+   AVCodec* codec;
+   AVCodecContext* codecContext;
+};
+
+QXmppH264Encoder::QXmppH264Encoder() { }
+QXmppH264Encoder::~QXmppH264Encoder() { }
+
+//TODO: Properly recreate codec
+bool QXmppH264Encoder::setFormat(const QXmppVideoFormat &format)
+{
+    d->codec = avcodec_find_encoder(CODEC_ID_H264);
+    d->codecContext = avcodec_alloc_context3(d->codec);
+    d->codecContext->pix_fmt = PIX_FMT_YUV420P;
+    d->codecContext->width = format.frameWidth();
+    d->codecContext->height = format.frameHeight();
+    d->codecContext->time_base.num = 1;
+    d->codecContext->time_base.den = qRound(format.frameRate());
+    if(avcodec_open2(d->codecContext,d->codec,0)<0) {
+        qWarning("Couldn't initialize h264 encoder");
+        return false;
+    }
+    return true;
+}
+
+QList<QByteArray> QXmppH264Encoder::handleFrame(const QXmppVideoFrame &qframe)
+{
+   QList<QByteArray> packets;    
+   AVFrame* frame = avcodec_alloc_frame();
+   AVPacket* pkt = new AVPacket();
+   av_init_packet(pkt);
+   pkt->size = 0;
+   frame->linesize[0] = qframe.bytesPerLine();
+   frame->data[0] = (uchar*) qframe.bits();
+   frame->width = qframe.width();
+   frame->height = qframe.height();
+   int got_packet = 0;
+   if(avcodec_encode_video2(d->codecContext,pkt,frame,&got_packet) < 0) return packets;
+   if(!got_packet) { av_free_packet(pkt); return packets; }
+   QByteArray packet((const char*)pkt->data,pkt->size);
+   packets << packet;
+   av_free_packet(pkt);
+   av_free(frame);
+   return packets;
+}
+
+QMap<QString, QString> QXmppH264Encoder::parameters() const
+{
+    return QMap<QString, QString>();
+}
 
 #endif
