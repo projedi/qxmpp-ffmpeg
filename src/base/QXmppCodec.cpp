@@ -1251,6 +1251,7 @@ public:
    int bitrate;
    AVCodec* codec;
    AVCodecContext* codecContext;
+   SwsContext* scaler;
 };
 
 //TODO: move ffmpeg initialization here
@@ -1262,6 +1263,7 @@ QXmppH264Decoder::QXmppH264Decoder()
     if(avcodec_open2(d->codecContext,d->codec,0) < 0) {
         qWarning("Couldn't initialize h264 decoder");
     }
+    d->scaler = 0;
 }
 
 QXmppH264Decoder::~QXmppH264Decoder()
@@ -1294,12 +1296,22 @@ QList<QXmppVideoFrame> QXmppH264Decoder::handlePacket(const QXmppRtpPacket &pack
       return frameList;
    }
    if(!got_picture) { av_free_packet(pkt); return frameList; }
-   QXmppVideoFrame qframe( frame->linesize[0]*frame->height
-                         , QSize(frame->width,frame->height), frame->linesize[0]
-                         , QXmppVideoFrame::Format_YUV420P);
-   uchar* data = qframe.bits();
-   memcpy(data,frame->data[0],frame->linesize[0]*frame->height);
+   AVFrame* newFrame = avcodec_alloc_frame();
+   d->scaler = sws_getCachedContext( d->scaler, frame->width, frame->height
+                                , (PixelFormat)frame->format
+                                , frame->width, frame->height, PIX_FMT_RGB24
+                                , SWS_BICUBIC, 0, 0, 0);
+   avpicture_alloc( (AVPicture*)newFrame, PIX_FMT_RGB24, frame->width, frame->height);
+   sws_scale( d->scaler, frame->data, frame->linesize, 0, frame->height
+            , newFrame->data, newFrame->linesize);
+   QXmppVideoFrame qframe( newFrame->linesize[0]*frame->height
+                         , QSize(frame->width,frame->height), newFrame->linesize[0]
+                         , QXmppVideoFrame::Format_RGB24);
+   uchar* data = (uchar*)qframe.bits();
+   memcpy(data,newFrame->data[0],newFrame->linesize[0]*frame->height);
    frameList << qframe;
+   avpicture_free((AVPicture*)newFrame);
+   av_free(newFrame);
    av_free(frame);
    av_free_packet(pkt);
    return frameList;
@@ -1415,6 +1427,7 @@ QList<QByteArray> QXmppH264Encoder::handleFrame(const QXmppVideoFrame &qframe)
    packets << packet;
    av_free_packet(pkt);
    av_free(frame);
+   avpicture_free((AVPicture*)newFrame);
    av_free(newFrame);
    return packets;
 }
