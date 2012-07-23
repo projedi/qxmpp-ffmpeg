@@ -392,7 +392,8 @@ public:
 QXmppH264Decoder::QXmppH264Decoder()
 {
     d = new QXmppH264DecoderPrivate;
-    d->codec = avcodec_find_decoder(CODEC_ID_H264);
+    //d->codec = avcodec_find_decoder(CODEC_ID_H264);
+    d->codec = avcodec_find_decoder(CODEC_ID_MJPEG);
     d->codecContext = avcodec_alloc_context3(d->codec);
     if(avcodec_open2(d->codecContext,d->codec,0) < 0) {
         qWarning("Couldn't initialize h264 decoder");
@@ -460,9 +461,11 @@ QXmppH264Encoder::~QXmppH264Encoder() { delete d; }
 
 bool QXmppH264Encoder::setFormat(const QXmppVideoFormat &format)
 {
-    d->codec = avcodec_find_encoder(CODEC_ID_H264);
+    //d->codec = avcodec_find_encoder(CODEC_ID_H264);
+    d->codec = avcodec_find_encoder(CODEC_ID_MJPEG);
     d->codecContext = avcodec_alloc_context3(d->codec);
-    d->codecContext->pix_fmt = PIX_FMT_YUV420P;
+    //TODO: Properly detect pix_fmt
+    d->codecContext->pix_fmt = d->codec->pix_fmts[0];
     d->codecContext->width = format.frameWidth();
     d->codecContext->height = format.frameHeight();
     d->codecContext->time_base.num = 1;
@@ -481,9 +484,10 @@ QList<QByteArray> QXmppH264Encoder::handleFrame(AVFrame *frame)
    AVFrame* newFrame = avcodec_alloc_frame();
    d->scaler = sws_getCachedContext( d->scaler, frame->width, frame->height
                                 , (PixelFormat)frame->format
-                                , frame->width, frame->height, PIX_FMT_YUV420P
+                                , frame->width, frame->height, d->codecContext->pix_fmt
                                 , SWS_BICUBIC, 0, 0, 0);
-   avpicture_alloc( (AVPicture*)newFrame, PIX_FMT_YUV420P, frame->width, frame->height);
+   avpicture_alloc( (AVPicture*)newFrame, d->codecContext->pix_fmt, frame->width
+                  , frame->height);
    sws_scale( d->scaler, frame->data, frame->linesize, 0, frame->height
             , newFrame->data, newFrame->linesize);
    newFrame->width = frame->width;

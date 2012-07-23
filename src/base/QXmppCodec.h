@@ -149,6 +149,7 @@ public:
 };
 
 class QXmppH264DecoderPrivate;
+
 class QXmppH264EncoderPrivate;
 
 class QXMPP_EXPORT QXmppH264Decoder : public QXmppVideoDecoder
