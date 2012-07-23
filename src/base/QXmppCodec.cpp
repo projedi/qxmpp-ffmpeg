@@ -55,6 +55,7 @@
 #ifdef QXMPP_USE_H264
 extern "C" {
 #include <libavcodec/avcodec.h>
+#include <libswscale/swscale.h>
 }
 #endif
 
@@ -1315,21 +1316,22 @@ public:
    int bitrate;
    AVCodec* codec;
    AVCodecContext* codecContext;
+   SwsContext* scaler;
 };
 
 QXmppH264Encoder::QXmppH264Encoder() {
    d = new QXmppH264EncoderPrivate;
+   d->scaler = 0;
+   d->codec = 0;
+   d->codecContext = 0;
 }
 QXmppH264Encoder::~QXmppH264Encoder() { delete d; }
 
 //TODO: Properly recreate codec
 bool QXmppH264Encoder::setFormat(const QXmppVideoFormat &format)
 {
-    qDebug() << "Setting format";
     d->codec = avcodec_find_encoder(CODEC_ID_H264);
-    qDebug() << "Finding encoder";
     d->codecContext = avcodec_alloc_context3(d->codec);
-    qDebug() << "Allocated context";
     d->codecContext->pix_fmt = PIX_FMT_YUV420P;
     d->codecContext->width = format.frameWidth();
     d->codecContext->height = format.frameHeight();
@@ -1349,17 +1351,71 @@ QList<QByteArray> QXmppH264Encoder::handleFrame(const QXmppVideoFrame &qframe)
    AVPacket* pkt = new AVPacket();
    av_init_packet(pkt);
    pkt->size = 0;
-   frame->linesize[0] = qframe.bytesPerLine();
-   frame->data[0] = (uchar*) qframe.bits();
+   qDebug("Got frame which size is %dx%d",qframe.width(),qframe.height());
+   qDebug("Total number of bytes is %d",qframe.mappedBytes());
    frame->width = qframe.width();
    frame->height = qframe.height();
+   if(qframe.pixelFormat() == QXmppVideoFrame::Format_YUV420P) {
+      qDebug("It's format is YUV420P for some reason");
+      frame->linesize[0] = qframe.bytesPerLine();
+      frame->linesize[1] = qframe.bytesPerLine()/2;
+      frame->linesize[2] = qframe.bytesPerLine()/2;
+      uchar* data = (uchar*) qframe.bits();
+      memcpy(frame->data[0], data, frame->linesize[0]*frame->height);
+      memcpy( frame->data[1], data + frame->linesize[0]*frame->height
+            , frame->linesize[1]*frame->height);
+      memcpy( frame->data[2], data + (frame->linesize[0]+frame->linesize[1])*frame->height
+            , frame->linesize[2]*frame->height);
+      for(int i = 3; i < AV_NUM_DATA_POINTERS; i++) {
+         frame->data[i] = 0;
+         frame->linesize[i] = 0;
+      }
+      frame->format = (int)PIX_FMT_YUV420P;
+   } else if(qframe.pixelFormat() == QXmppVideoFrame::Format_YUYV) {
+      qDebug("It's format is YUYV422");
+      frame->linesize[0] = qframe.bytesPerLine();
+      uchar* data = (uchar*)qframe.bits();
+      memcpy(frame->data[0], data, qframe.mappedBytes());
+      /*
+      for(int i = 1; i < AV_NUM_DATA_POINTERS; i++) {
+         frame->data[i] = 0;
+         frame->linesize[i] = 0;
+      }
+      */
+      frame->format = (int)PIX_FMT_YUYV422;
+   } else if(qframe.pixelFormat() == QXmppVideoFrame::Format_RGB24) {
+      qDebug("It's format is RGB24");
+      frame->linesize[0] = qframe.bytesPerLine();
+      //uchar* data = (uchar*)qframe.bits();
+      //memcpy(frame->data[0], data, qframe.mappedBytes());
+      frame->data[0] = (uchar*)qframe.bits();
+      /*
+      for(int i = 1; i < AV_NUM_DATA_POINTERS; i++) {
+         frame->data[i] = 0;
+         frame->linesize[i] = 0;
+      }
+      */
+      frame->format = (int)PIX_FMT_RGB24;
+   }
+
+   qDebug("Going to scale it");
+   AVFrame* newFrame = avcodec_alloc_frame();
+   d->scaler = sws_getCachedContext( d->scaler, frame->width, frame->height
+                                , (PixelFormat)frame->format
+                                , frame->width, frame->height, PIX_FMT_YUV420P
+                                , SWS_BICUBIC, 0, 0, 0);
+   avpicture_alloc( (AVPicture*)newFrame, PIX_FMT_YUV420P, frame->width, frame->height);
+   sws_scale( d->scaler, frame->data, frame->linesize, 0, frame->height
+            , newFrame->data, newFrame->linesize);
+
    int got_packet = 0;
-   if(avcodec_encode_video2(d->codecContext,pkt,frame,&got_packet) < 0) return packets;
+   if(avcodec_encode_video2(d->codecContext,pkt,newFrame,&got_packet) < 0) return packets;
    if(!got_packet) { av_free_packet(pkt); return packets; }
    QByteArray packet((const char*)pkt->data,pkt->size);
    packets << packet;
    av_free_packet(pkt);
    av_free(frame);
+   av_free(newFrame);
    return packets;
 }
 
