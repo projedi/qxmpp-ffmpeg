@@ -27,8 +27,8 @@ LIBS += $$QXMPP_INTERNAL_LIBS
 
 #!isEmpty(QXMPP_USE_H264) {
     DEFINES += QXMPP_USE_H264 __STDC_CONSTANT_MACROS
-    win32: LIBS += -L$$PWD/3rd-party/lib
-    win32: INCLUDEPATH += $$PWD/3rd-party/include
+    win32: LIBS += -L$$PWD/../3rd-party/lib
+    win32: INCLUDEPATH += $$PWD/../3rd-party/include
     LIBS += -lavcodec -lavutil
 #}
 
