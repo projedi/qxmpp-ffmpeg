@@ -739,106 +739,13 @@ void QXmppRtpAudioChannel::writeDatagram()
     }
 }
 
-/** Constructs a null video frame.
- */
-QXmppVideoFrame::QXmppVideoFrame()
-    : m_bytesPerLine(0),
-    m_height(0),
-    m_mappedBytes(0),
-    m_pixelFormat(Format_Invalid),
-    m_width(0)
-{
-}
-
-/** Constructs a video frame of the given pixel format and size in pixels.
- *
- * @param bytes
- * @param size
- * @param bytesPerLine
- * @param format
- */
-QXmppVideoFrame::QXmppVideoFrame(int bytes, const QSize &size, int bytesPerLine, PixelFormat format)
-    : m_bytesPerLine(bytesPerLine),
-    m_height(size.height()),
-    m_mappedBytes(bytes),
-    m_pixelFormat(format),
-    m_width(size.width())
-{
-    m_data.resize(bytes);
-}
-
-/// Returns a pointer to the start of the frame data buffer.
-
-uchar *QXmppVideoFrame::bits()
-{
-    return (uchar*)m_data.data();
-}
-
-/// Returns a pointer to the start of the frame data buffer.
-
-const uchar *QXmppVideoFrame::bits() const
-{
-    return (const uchar*)m_data.constData();
-}
-
-/// Returns the number of bytes in a scan line.
-
-int QXmppVideoFrame::bytesPerLine() const
-{
-    return m_bytesPerLine;
-}
-
-/// Returns the height of a video frame.
-
-int QXmppVideoFrame::height() const
-{
-    return m_height;
-}
-
-/// Returns true if the frame is valid.
-
-bool QXmppVideoFrame::isValid() const
-{
-    return m_pixelFormat != Format_Invalid &&
-           m_height > 0 && m_width > 0 &&
-           m_mappedBytes > 0;
-}
-
-/// Returns the number of bytes occupied by the mapped frame data.
-
-int QXmppVideoFrame::mappedBytes() const
-{
-    return m_mappedBytes;
-}
-
-/// Returns the color format of a video frame.
-
-QXmppVideoFrame::PixelFormat QXmppVideoFrame::pixelFormat() const
-{
-    return m_pixelFormat;
-}
-
-/// Returns the size of a video frame.
-
-QSize QXmppVideoFrame::size() const
-{
-    return QSize(m_width, m_height);
-}
-
-/// Returns the width of a video frame.
-
-int QXmppVideoFrame::width() const
-{
-    return m_width;
-}
-
 class QXmppRtpVideoChannelPrivate
 {
 public:
     QXmppRtpVideoChannelPrivate();
     QMap<int, QXmppVideoDecoder*> decoders;
     QXmppVideoEncoder *encoder;
-    QList<QXmppVideoFrame> frames;
+    QList<AVFrame*> frames;
 
     // local
     QXmppVideoFormat outgoingFormat;
@@ -867,7 +774,7 @@ QXmppRtpVideoChannel::QXmppRtpVideoChannel(QObject *parent)
     d = new QXmppRtpVideoChannelPrivate;
     d->outgoingFormat.setFrameRate(15.0);
     d->outgoingFormat.setFrameSize(QSize(320, 240));
-    d->outgoingFormat.setPixelFormat(QXmppVideoFrame::Format_YUYV);
+    d->outgoingFormat.setPixelFormat(PIX_FMT_YUYV422);
 
     // set supported codecs
     QXmppVideoEncoder *encoder;
@@ -1038,16 +945,16 @@ void QXmppRtpVideoChannel::payloadTypesChanged()
 
 /// Decodes buffered RTP packets and returns a list of video frames.
 
-QList<QXmppVideoFrame> QXmppRtpVideoChannel::readFrames()
+QList<AVFrame*> QXmppRtpVideoChannel::readFrames()
 {
-    const QList<QXmppVideoFrame> frames = d->frames;
+    const QList<AVFrame*> frames = d->frames;
     d->frames.clear();
     return frames;
 }
 
 /// Encodes a video \a frame and sends RTP packets.
 
-void QXmppRtpVideoChannel::writeFrame(const QXmppVideoFrame &frame)
+void QXmppRtpVideoChannel::writeFrame(AVFrame *frame)
 {
     if (!d->encoder) {
         warning("QXmppRtpVideoChannel::writeFrame before codec was set");

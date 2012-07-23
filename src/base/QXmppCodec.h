@@ -28,9 +28,13 @@
 
 #include "QXmppGlobal.h"
 
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libswscale/swscale.h>
+}
+
 class QXmppRtpPacket;
 class QXmppVideoFormat;
-class QXmppVideoFrame;
 
 /// \brief The QXmppCodec class is the base class for audio codecs capable of
 /// encoding and decoding audio samples.
@@ -120,7 +124,7 @@ public:
     virtual QXmppVideoFormat format() const = 0;
 
     /// Handles an RTP \a packet and returns a list of decoded video frames.
-    virtual QList<QXmppVideoFrame> handlePacket(const QXmppRtpPacket &packet) = 0;
+    virtual QList<AVFrame*> handlePacket(const QXmppRtpPacket &packet) = 0;
 
     /// Sets the video stream's \a parameters.
     virtual bool setParameters(const QMap<QString, QString> &parameters) = 0;
@@ -138,79 +142,12 @@ public:
     virtual bool setFormat(const QXmppVideoFormat &format) = 0;
 
     /// Handles a video \a frame and returns a list of RTP packet payloads.
-    virtual QList<QByteArray> handleFrame(const QXmppVideoFrame &frame) = 0;
+    virtual QList<QByteArray> handleFrame(AVFrame *frame) = 0;
 
     /// Returns the video stream's parameters.
     virtual QMap<QString, QString> parameters() const = 0;
 };
 
-#ifdef QXMPP_USE_THEORA
-class QXmppTheoraDecoderPrivate;
-class QXmppTheoraEncoderPrivate;
-
-class QXMPP_EXPORT QXmppTheoraDecoder : public QXmppVideoDecoder
-{
-public:
-    QXmppTheoraDecoder();
-    ~QXmppTheoraDecoder();
-
-    QXmppVideoFormat format() const;
-    QList<QXmppVideoFrame> handlePacket(const QXmppRtpPacket &packet);
-    bool setParameters(const QMap<QString, QString> &parameters);
-
-private:
-    QXmppTheoraDecoderPrivate *d;
-};
-
-class QXMPP_EXPORT QXmppTheoraEncoder : public QXmppVideoEncoder
-{
-public:
-    QXmppTheoraEncoder();
-    ~QXmppTheoraEncoder();
-
-    bool setFormat(const QXmppVideoFormat &format);
-    QList<QByteArray> handleFrame(const QXmppVideoFrame &frame);
-    QMap<QString, QString> parameters() const;
-
-private:
-    QXmppTheoraEncoderPrivate *d;
-};
-#endif
-
-#ifdef QXMPP_USE_VPX
-class QXmppVpxDecoderPrivate;
-class QXmppVpxEncoderPrivate;
-
-class QXMPP_EXPORT QXmppVpxDecoder : public QXmppVideoDecoder
-{
-public:
-    QXmppVpxDecoder();
-    ~QXmppVpxDecoder();
-
-    QXmppVideoFormat format() const;
-    QList<QXmppVideoFrame> handlePacket(const QXmppRtpPacket &packet);
-    bool setParameters(const QMap<QString, QString> &parameters);
-
-private:
-    QXmppVpxDecoderPrivate *d;
-};
-
-class QXMPP_EXPORT QXmppVpxEncoder : public QXmppVideoEncoder
-{
-public:
-    QXmppVpxEncoder();
-    ~QXmppVpxEncoder();
-
-    bool setFormat(const QXmppVideoFormat &format);
-    QList<QByteArray> handleFrame(const QXmppVideoFrame &frame);
-    QMap<QString, QString> parameters() const;
-
-private:
-    QXmppVpxEncoderPrivate *d;
-};
-#endif
-
-#ifdef QXMPP_USE_H264
 class QXmppH264DecoderPrivate;
 class QXmppH264EncoderPrivate;
 
@@ -221,7 +158,7 @@ public:
     ~QXmppH264Decoder();
 
     QXmppVideoFormat format() const;
-    QList<QXmppVideoFrame> handlePacket(const QXmppRtpPacket &packet);
+    QList<AVFrame*> handlePacket(const QXmppRtpPacket &packet);
     bool setParameters(const QMap<QString, QString> &parameters);
 
 private:
@@ -235,12 +172,11 @@ public:
     ~QXmppH264Encoder();
 
     bool setFormat(const QXmppVideoFormat &format);
-    QList<QByteArray> handleFrame(const QXmppVideoFrame &frame);
+    QList<QByteArray> handleFrame(AVFrame *frame);
     QMap<QString, QString> parameters() const;
 
 private:
     QXmppH264EncoderPrivate *d;
 };
-#endif
 
 #endif

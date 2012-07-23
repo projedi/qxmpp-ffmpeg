@@ -30,6 +30,10 @@
 #include "QXmppJingleIq.h"
 #include "QXmppLogger.h"
 
+extern "C" {
+#include <libavcodec/avcodec.h>
+}
+
 class QXmppCodec;
 class QXmppJinglePayloadType;
 class QXmppRtpAudioChannelPrivate;
@@ -168,43 +172,6 @@ private:
     QXmppRtpAudioChannelPrivate * d;
 };
 
-/// \brief The QXmppVideoFrame class provides a representation of a frame of video data.
-///
-/// \note THIS API IS NOT FINALIZED YET
-
-class QXMPP_EXPORT QXmppVideoFrame
-{
-public:
-    enum PixelFormat {
-        Format_Invalid = 0,
-        Format_RGB32 = 3,
-        Format_RGB24 = 4,
-        Format_YUV420P = 18,
-        Format_UYVY = 20,
-        Format_YUYV = 21,
-    };
-
-    QXmppVideoFrame();
-    QXmppVideoFrame(int bytes, const QSize &size, int bytesPerLine, PixelFormat format);
-    uchar *bits();
-    const uchar *bits() const;
-    int bytesPerLine() const;
-    int height() const;
-    bool isValid() const;
-    int mappedBytes() const;
-    PixelFormat pixelFormat() const;
-    QSize size() const;
-    int width() const;
-
-private:
-    int m_bytesPerLine;
-    QByteArray m_data;
-    int m_height;
-    int m_mappedBytes;
-    PixelFormat m_pixelFormat;
-    int m_width;
-};
-
 class QXMPP_EXPORT QXmppVideoFormat
 {
 public:
@@ -232,18 +199,18 @@ public:
         m_frameSize = frameSize;
     }
 
-    QXmppVideoFrame::PixelFormat pixelFormat() const {
+    PixelFormat pixelFormat() const {
         return m_pixelFormat;
     }
 
-    void setPixelFormat(QXmppVideoFrame::PixelFormat pixelFormat) {
+    void setPixelFormat(PixelFormat pixelFormat) {
         m_pixelFormat = pixelFormat;
     }
 
 private:
     qreal m_frameRate;
     QSize m_frameSize;
-    QXmppVideoFrame::PixelFormat m_pixelFormat;
+    PixelFormat m_pixelFormat;
 };
 
 
@@ -261,12 +228,12 @@ public:
 
     // incoming stream
     QXmppVideoFormat decoderFormat() const;
-    QList<QXmppVideoFrame> readFrames();
+    QList<AVFrame*> readFrames();
 
     // outgoing stream
     QXmppVideoFormat encoderFormat() const;
     void setEncoderFormat(const QXmppVideoFormat &format);
-    void writeFrame(const QXmppVideoFrame &frame);
+    void writeFrame(AVFrame *frame);
 
     QIODevice::OpenMode openMode() const;
     void close();
