@@ -148,36 +148,36 @@ public:
     virtual QMap<QString, QString> parameters() const = 0;
 };
 
-class QXmppH264DecoderPrivate;
+class QXmppFFmpegDecoderPrivate;
 
-class QXmppH264EncoderPrivate;
+class QXmppFFmpegEncoderPrivate;
 
-class QXMPP_EXPORT QXmppH264Decoder : public QXmppVideoDecoder
+class QXMPP_EXPORT QXmppFFmpegDecoder : public QXmppVideoDecoder
 {
 public:
-    QXmppH264Decoder();
-    ~QXmppH264Decoder();
+    QXmppFFmpegDecoder(CodecID);
+    ~QXmppFFmpegDecoder();
 
     QXmppVideoFormat format() const;
     QList<AVFrame*> handlePacket(const QXmppRtpPacket &packet);
     bool setParameters(const QMap<QString, QString> &parameters);
 
 private:
-    QXmppH264DecoderPrivate *d;
+    QXmppFFmpegDecoderPrivate *d;
 };
 
-class QXMPP_EXPORT QXmppH264Encoder : public QXmppVideoEncoder
+class QXMPP_EXPORT QXmppFFmpegEncoder : public QXmppVideoEncoder
 {
 public:
-    QXmppH264Encoder();
-    ~QXmppH264Encoder();
+    QXmppFFmpegEncoder(CodecID);
+    ~QXmppFFmpegEncoder();
 
     bool setFormat(const QXmppVideoFormat &format);
     QList<QByteArray> handleFrame(AVFrame *frame);
     QMap<QString, QString> parameters() const;
 
 private:
-    QXmppH264EncoderPrivate *d;
+    QXmppFFmpegEncoderPrivate *d;
 };
 
 #endif

@@ -379,7 +379,7 @@ qint64 QXmppSpeexCodec::decode(QDataStream &input, QDataStream &output)
 
 #endif
 
-class QXmppH264DecoderPrivate
+class QXmppFFmpegDecoderPrivate
 {
 public:
    int bitrate;
@@ -389,11 +389,10 @@ public:
 };
 
 //TODO: move ffmpeg initialization here
-QXmppH264Decoder::QXmppH264Decoder()
+QXmppFFmpegDecoder::QXmppFFmpegDecoder(CodecID codecID)
 {
-    d = new QXmppH264DecoderPrivate;
-    //d->codec = avcodec_find_decoder(CODEC_ID_H264);
-    d->codec = avcodec_find_decoder(CODEC_ID_MJPEG);
+    d = new QXmppFFmpegDecoderPrivate;
+    d->codec = avcodec_find_decoder(codecID);
     d->codecContext = avcodec_alloc_context3(d->codec);
     if(avcodec_open2(d->codecContext,d->codec,0) < 0) {
         qWarning("Couldn't initialize h264 decoder");
@@ -401,14 +400,14 @@ QXmppH264Decoder::QXmppH264Decoder()
     d->scaler = 0;
 }
 
-QXmppH264Decoder::~QXmppH264Decoder()
+QXmppFFmpegDecoder::~QXmppFFmpegDecoder()
 {
     avcodec_close(d->codecContext);
     delete d;
 }
 
 //TODO: Properly get values from codec context
-QXmppVideoFormat QXmppH264Decoder::format() const
+QXmppVideoFormat QXmppFFmpegDecoder::format() const
 {
     QXmppVideoFormat format;
     format.setFrameRate(30.0);
@@ -417,7 +416,7 @@ QXmppVideoFormat QXmppH264Decoder::format() const
     return format;
 }
 
-QList<AVFrame*> QXmppH264Decoder::handlePacket(const QXmppRtpPacket &packet)
+QList<AVFrame*> QXmppFFmpegDecoder::handlePacket(const QXmppRtpPacket &packet)
 {
    QList<AVFrame*> frameList;
    AVPacket* pkt = new AVPacket;
@@ -435,12 +434,12 @@ QList<AVFrame*> QXmppH264Decoder::handlePacket(const QXmppRtpPacket &packet)
    return frameList;
 }
 
-bool QXmppH264Decoder::setParameters(const QMap<QString, QString> &parameters)
+bool QXmppFFmpegDecoder::setParameters(const QMap<QString, QString> &parameters)
 {
     return true;
 }
 
-class QXmppH264EncoderPrivate
+class QXmppFFmpegEncoderPrivate
 {
 public:
    int bitrate;
@@ -450,19 +449,18 @@ public:
    int64_t pts;
 };
 
-QXmppH264Encoder::QXmppH264Encoder() {
-   d = new QXmppH264EncoderPrivate;
+QXmppFFmpegEncoder::QXmppFFmpegEncoder(CodecID codecID) {
+   d = new QXmppFFmpegEncoderPrivate;
    d->scaler = 0;
-   d->codec = 0;
+   d->codec = avcodec_find_encoder(codecID);
    d->codecContext = 0;
    d->pts = 0;
 }
-QXmppH264Encoder::~QXmppH264Encoder() { delete d; }
 
-bool QXmppH264Encoder::setFormat(const QXmppVideoFormat &format)
+QXmppFFmpegEncoder::~QXmppFFmpegEncoder() { delete d; }
+
+bool QXmppFFmpegEncoder::setFormat(const QXmppVideoFormat &format)
 {
-    //d->codec = avcodec_find_encoder(CODEC_ID_H264);
-    d->codec = avcodec_find_encoder(CODEC_ID_MJPEG);
     d->codecContext = avcodec_alloc_context3(d->codec);
     //TODO: Properly detect pix_fmt
     d->codecContext->pix_fmt = d->codec->pix_fmts[0];
@@ -479,7 +477,7 @@ bool QXmppH264Encoder::setFormat(const QXmppVideoFormat &format)
     return true;
 }
 
-QList<QByteArray> QXmppH264Encoder::handleFrame(AVFrame *frame)
+QList<QByteArray> QXmppFFmpegEncoder::handleFrame(AVFrame *frame)
 {
    AVFrame* newFrame = avcodec_alloc_frame();
    d->scaler = sws_getCachedContext( d->scaler, frame->width, frame->height
@@ -509,7 +507,7 @@ QList<QByteArray> QXmppH264Encoder::handleFrame(AVFrame *frame)
    return packets;
 }
 
-QMap<QString, QString> QXmppH264Encoder::parameters() const
+QMap<QString, QString> QXmppFFmpegEncoder::parameters() const
 {
     return QMap<QString, QString>();
 }

@@ -223,7 +223,7 @@ class QXMPP_EXPORT QXmppRtpVideoChannel : public QXmppLoggable, public QXmppRtpC
     Q_OBJECT
 
 public:
-    QXmppRtpVideoChannel(QObject *parent = 0);
+    QXmppRtpVideoChannel(QList<CodecID> codecs, QObject *parent = 0);
     ~QXmppRtpVideoChannel();
 
     // incoming stream

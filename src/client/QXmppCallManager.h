@@ -31,6 +31,10 @@
 #include "QXmppClientExtension.h"
 #include "QXmppLogger.h"
 
+extern "C" {
+#include <libavcodec/avcodec.h>
+}
+
 class QHostAddress;
 class QXmppCallPrivate;
 class QXmppCallManager;
@@ -128,7 +132,7 @@ private slots:
     void updateOpenMode();
 
 private:
-    QXmppCall(const QString &jid, QXmppCall::Direction direction, QXmppCallManager *parent);
+    QXmppCall(QList<CodecID> codecs, const QString &jid, QXmppCall::Direction direction, QXmppCallManager *parent);
 
     QXmppCallPrivate *d;
     friend class QXmppCallManager;
@@ -168,6 +172,7 @@ public:
     void setTurnServer(const QHostAddress &host, quint16 port = 3478);
     void setTurnUser(const QString &user);
     void setTurnPassword(const QString &password);
+    void setCodecs(QList<CodecID> codecs);
 
     /// \cond
     QStringList discoveryFeatures() const;

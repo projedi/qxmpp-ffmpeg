@@ -57,8 +57,8 @@ public:
         QString name;
     };
 
-    QXmppCallPrivate(QXmppCall *qq);
-    Stream *createStream(const QString &media);
+    QXmppCallPrivate(QList<CodecID> codecs, QXmppCall *qq);
+    Stream *createStream(QList<CodecID> codecs, const QString &media);
     Stream *findStreamByMedia(const QString &media);
     Stream *findStreamByName(const QString &name);
     void handleAck(const QXmppIq &iq);
@@ -84,6 +84,7 @@ public:
     QList<Stream*> streams;
     QIODevice::OpenMode audioMode;
     QIODevice::OpenMode videoMode;
+    QList<CodecID> codecs;
 
 private:
     QXmppCall *q;
@@ -103,16 +104,18 @@ public:
     quint16 turnPort;
     QString turnUser;
     QString turnPassword;
+    QList<CodecID> codecs;
 
 private:
     QXmppCallManager *q;
 };
 
-QXmppCallPrivate::QXmppCallPrivate(QXmppCall *qq)
+QXmppCallPrivate::QXmppCallPrivate(QList<CodecID> codecs, QXmppCall *qq)
     : state(QXmppCall::ConnectingState),
     sendVideo(false),
     audioMode(QIODevice::NotOpen),
     videoMode(QIODevice::NotOpen),
+    codecs(codecs),
     q(qq)
 {
 }
@@ -240,7 +243,10 @@ void QXmppCallPrivate::handleRequest(const QXmppJingleIq &iq)
             return;
 
         // create media stream
-        stream = createStream(iq.content().descriptionMedia());
+        if(iq.content().descriptionMedia() == VIDEO_MEDIA)
+           stream = createStream(codecs, iq.content().descriptionMedia());
+        else
+           stream = createStream(QList<CodecID>(), iq.content().descriptionMedia());
         if (!stream)
             return;
         stream->creator = iq.content().creator();
@@ -300,7 +306,7 @@ void QXmppCallPrivate::handleRequest(const QXmppJingleIq &iq)
     }
 }
 
-QXmppCallPrivate::Stream *QXmppCallPrivate::createStream(const QString &media)
+QXmppCallPrivate::Stream *QXmppCallPrivate::createStream(QList<CodecID> codecs, const QString &media)
 {
     bool check;
     Q_UNUSED(check);
@@ -316,7 +322,7 @@ QXmppCallPrivate::Stream *QXmppCallPrivate::createStream(const QString &media)
         stream->channel = audioChannel;
         channelObject = audioChannel;
     } else if (media == VIDEO_MEDIA) {
-        QXmppRtpVideoChannel *videoChannel = new QXmppRtpVideoChannel(q);
+        QXmppRtpVideoChannel *videoChannel = new QXmppRtpVideoChannel(codecs, q);
         stream->channel = videoChannel;
         channelObject = videoChannel;
     } else {
@@ -454,17 +460,17 @@ void QXmppCallPrivate::terminate(QXmppJingleIq::Reason::Type reasonType)
     QTimer::singleShot(5000, q, SLOT(terminated()));
 }
 
-QXmppCall::QXmppCall(const QString &jid, QXmppCall::Direction direction, QXmppCallManager *parent)
+QXmppCall::QXmppCall(QList<CodecID> codecs, const QString &jid, QXmppCall::Direction direction, QXmppCallManager *parent)
     : QXmppLoggable(parent)
 {
-    d = new QXmppCallPrivate(this);
+    d = new QXmppCallPrivate(codecs, this);
     d->direction = direction;
     d->jid = jid;
     d->ownJid = parent->client()->configuration().jid();
     d->manager = parent;
 
     // create audio stream
-    QXmppCallPrivate::Stream *stream = d->createStream(AUDIO_MEDIA);
+    QXmppCallPrivate::Stream *stream = d->createStream(QList<CodecID>(), AUDIO_MEDIA);
     stream->creator = QLatin1String("initiator");
     stream->name = QLatin1String("voice");
     d->streams << stream;
@@ -693,7 +699,7 @@ void QXmppCall::startVideo()
     }
 
     // create video stream
-    stream = d->createStream(VIDEO_MEDIA);
+    stream = d->createStream(d->codecs, VIDEO_MEDIA);
     stream->creator = (d->direction == QXmppCall::OutgoingDirection) ? QLatin1String("initiator") : QLatin1String("responder");
     stream->name = QLatin1String("webcam");
     d->streams << stream;
@@ -822,6 +828,10 @@ void QXmppCallManager::setClient(QXmppClient *client)
     Q_ASSERT(check);
 }
 
+void QXmppCallManager::setCodecs(QList<CodecID> codecs) {
+   d->codecs = codecs;
+}
+
 /// Initiates a new outgoing call to the specified recipient.
 ///
 /// \param jid
@@ -841,7 +851,7 @@ QXmppCall *QXmppCallManager::call(const QString &jid)
         return 0;
     }
 
-    QXmppCall *call = new QXmppCall(jid, QXmppCall::OutgoingDirection, this);
+    QXmppCall *call = new QXmppCall(d->codecs, jid, QXmppCall::OutgoingDirection, this);
     call->d->sid = QXmppUtils::generateStanzaHash();
 
     // register call
@@ -939,7 +949,7 @@ void QXmppCallManager::_q_jingleIqReceived(const QXmppJingleIq &iq)
     if (iq.action() == QXmppJingleIq::SessionInitiate)
     {
         // build call
-        QXmppCall *call = new QXmppCall(iq.from(), QXmppCall::IncomingDirection, this);
+        QXmppCall *call = new QXmppCall(d->codecs, iq.from(), QXmppCall::IncomingDirection, this);
         call->d->sid = iq.sid();
 
         QXmppCallPrivate::Stream *stream = call->d->findStreamByMedia(iq.content().descriptionMedia());

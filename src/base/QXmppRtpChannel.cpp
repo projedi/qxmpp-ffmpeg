@@ -768,7 +768,7 @@ QXmppRtpVideoChannelPrivate::QXmppRtpVideoChannelPrivate()
 /// Constructs a new RTP video channel with the given \a parent.
 
 //TODO: Add the ability to change the preferred codecs order
-QXmppRtpVideoChannel::QXmppRtpVideoChannel(QObject *parent)
+QXmppRtpVideoChannel::QXmppRtpVideoChannel(QList<CodecID> codecs, QObject *parent)
     : QXmppLoggable(parent)
 {
     d = new QXmppRtpVideoChannelPrivate;
@@ -782,38 +782,16 @@ QXmppRtpVideoChannel::QXmppRtpVideoChannel(QObject *parent)
     Q_UNUSED(encoder);
     Q_UNUSED(payload);
 
-#ifdef QXMPP_USE_VPX
-    encoder = new QXmppVpxEncoder;
-    encoder->setFormat(d->outgoingFormat);
-    payload.setId(96);
-    payload.setName("vp8");
-    payload.setClockrate(90000);
-    payload.setParameters(encoder->parameters());
-    m_outgoingPayloadTypes << payload;
-    delete encoder;
-#endif
-
-#ifdef QXMPP_USE_THEORA
-    encoder = new QXmppTheoraEncoder;
-    encoder->setFormat(d->outgoingFormat);
-    payload.setId(97);
-    payload.setName("theora");
-    payload.setClockrate(90000);
-    payload.setParameters(encoder->parameters());
-    m_outgoingPayloadTypes << payload;
-    delete encoder;
-#endif
-
-#ifdef QXMPP_USE_H264
-    encoder = new QXmppH264Encoder;
-    encoder->setFormat(d->outgoingFormat);
-    payload.setId(98);
-    payload.setName("h264");
-    payload.setClockrate(90000);
-    payload.setParameters(encoder->parameters());
-    m_outgoingPayloadTypes << payload;
-    delete encoder;
-#endif
+    foreach(CodecID cid, codecs) {
+       encoder = new QXmppFFmpegEncoder(cid);
+       encoder->setFormat(d->outgoingFormat);
+       payload.setId(96);
+       payload.setName(avcodec_get_name(cid));
+       payload.setClockrate(90000);
+       payload.setParameters(encoder->parameters());
+       m_outgoingPayloadTypes << payload;
+       delete encoder;
+    }
 }
 
 QXmppRtpVideoChannel::~QXmppRtpVideoChannel()
@@ -893,20 +871,15 @@ void QXmppRtpVideoChannel::payloadTypesChanged()
     d->decoders.clear();
     foreach (const QXmppJinglePayloadType &payload, m_incomingPayloadTypes) {
         QXmppVideoDecoder *decoder = 0;
-        if (false)
-            {}
-#ifdef QXMPP_USE_THEORA
-        else if (payload.name().toLower() == "theora")
-            decoder = new QXmppTheoraDecoder;
-#endif
-#ifdef QXMPP_USE_VPX
-        else if (payload.name().toLower() == "vp8")
-            decoder = new QXmppVpxDecoder;
-#endif
-#ifdef QXMPP_USE_H264
-        else if (payload.name().toLower() == "h264")
-            decoder = new QXmppH264Decoder;
-#endif
+        for(AVCodec* codec = av_codec_next(0); codec != 0; codec = av_codec_next(codec)) {
+           CodecID cid = codec->id;
+           if(codec->type != AVMEDIA_TYPE_VIDEO) continue;
+           if(!av_codec_is_decoder(codec)) continue;
+           if(payload.name() == avcodec_get_name(cid)) {
+              decoder = new QXmppFFmpegDecoder(cid);
+              break;
+           }
+        }
         if (decoder) {
             decoder->setParameters(payload.parameters());
             d->decoders.insert(payload.id(), decoder);
@@ -920,20 +893,15 @@ void QXmppRtpVideoChannel::payloadTypesChanged()
     }
     foreach (const QXmppJinglePayloadType &payload, m_outgoingPayloadTypes) {
         QXmppVideoEncoder *encoder = 0;
-        if (false)
-            {}
-#ifdef QXMPP_USE_THEORA
-        else if (payload.name().toLower() == "theora")
-            encoder = new QXmppTheoraEncoder;
-#endif
-#ifdef QXMPP_USE_VPX
-        else if (payload.name().toLower() == "vp8")
-            encoder = new QXmppVpxEncoder;
-#endif
-#ifdef QXMPP_USE_H264
-        else if (payload.name().toLower() == "h264")
-            encoder = new QXmppH264Encoder;
-#endif
+        for(AVCodec* codec = av_codec_next(0); codec != 0; codec = av_codec_next(codec)) {
+           CodecID cid = codec->id;
+           if(codec->type != AVMEDIA_TYPE_VIDEO) continue;
+           if(!av_codec_is_encoder(codec)) continue;
+           if(payload.name() == avcodec_get_name(cid)) {
+              encoder = new QXmppFFmpegEncoder(cid);
+              break;
+           }
+        }
         if (encoder) {
             encoder->setFormat(d->outgoingFormat);
             d->encoder = encoder;
