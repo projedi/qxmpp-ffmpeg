@@ -92,18 +92,7 @@ QList<QXmppMucRoom*> QXmppMucManager::rooms() const
     return d->rooms.values();
 }
 
-void QXmppMucManager::setClient(QXmppClient* client)
-{
-    bool check;
-    Q_UNUSED(check);
-
-    QXmppClientExtension::setClient(client);
-
-    check = connect(client, SIGNAL(messageReceived(QXmppMessage)),
-                    this, SLOT(_q_messageReceived(QXmppMessage)));
-    Q_ASSERT(check);
-}
-
+/// \cond
 QStringList QXmppMucManager::discoveryFeatures() const
 {
     // XEP-0045: Multi-User Chat
@@ -150,6 +139,19 @@ bool QXmppMucManager::handleStanza(const QDomElement &element)
     }
     return false;
 }
+
+void QXmppMucManager::setClient(QXmppClient* client)
+{
+    bool check;
+    Q_UNUSED(check);
+
+    QXmppClientExtension::setClient(client);
+
+    check = connect(client, SIGNAL(messageReceived(QXmppMessage)),
+                    this, SLOT(_q_messageReceived(QXmppMessage)));
+    Q_ASSERT(check);
+}
+/// \endcond
 
 void QXmppMucManager::_q_messageReceived(const QXmppMessage &msg)
 {
@@ -298,10 +300,7 @@ bool QXmppMucRoom::leave(const QString &message)
     QXmppPresence packet;
     packet.setTo(d->ownJid());
     packet.setType(QXmppPresence::Unavailable);
-
-    QXmppPresence::Status status;
-    status.setStatusText(message);
-    packet.setStatus(status);
+    packet.setStatusText(message);
     return d->client->sendPacket(packet);
 }
 

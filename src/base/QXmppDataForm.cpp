@@ -76,6 +76,14 @@ QXmppDataForm::Media::~Media()
 {
 }
 
+/// Assigns \a other to this media.
+
+QXmppDataForm::Media& QXmppDataForm::Media::operator=(const QXmppDataForm::Media &other)
+{
+    d = other.d;
+    return *this;
+}
+
 /// Returns media's height.
 
 int QXmppDataForm::Media::height() const
@@ -424,6 +432,7 @@ bool QXmppDataForm::isNull() const
     return d->type == QXmppDataForm::None;
 }
 
+/// \cond
 void QXmppDataForm::parse(const QDomElement &element)
 {
     if (element.isNull())
@@ -648,4 +657,4 @@ void QXmppDataForm::toXml(QXmlStreamWriter *writer) const
 
     writer->writeEndElement();
 }
-
+/// \endcond

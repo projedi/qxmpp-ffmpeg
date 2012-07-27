@@ -6,7 +6,6 @@ INSTALL_HEADERS += \
     base/QXmppBindIq.h \
     base/QXmppBookmarkSet.h \
     base/QXmppByteStreamIq.h \
-    base/QXmppCodec.h \
     base/QXmppConstants.h \
     base/QXmppDataForm.h \
     base/QXmppDiscoveryIq.h \
@@ -28,7 +27,6 @@ INSTALL_HEADERS += \
     base/QXmppRosterIq.h \
     base/QXmppRpcIq.h \
     base/QXmppRtpChannel.h \
-    base/QXmppSaslAuth.h \
     base/QXmppSessionIq.h \
     base/QXmppSocks.h \
     base/QXmppStanza.h \
@@ -39,6 +37,10 @@ INSTALL_HEADERS += \
     base/QXmppUtils.h \
     base/QXmppVCardIq.h \
     base/QXmppVersionIq.h
+
+HEADERS += \
+    base/QXmppCodec_p.h \
+    base/QXmppSasl_p.h
 
 # Source files
 SOURCES += \
@@ -68,7 +70,7 @@ SOURCES += \
     base/QXmppRosterIq.cpp \
     base/QXmppRpcIq.cpp \
     base/QXmppRtpChannel.cpp \
-    base/QXmppSaslAuth.cpp \
+    base/QXmppSasl.cpp \
     base/QXmppSessionIq.cpp \
     base/QXmppSocks.cpp \
     base/QXmppStanza.cpp \

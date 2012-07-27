@@ -29,7 +29,7 @@
 #include <QDebug>
 #include <QSize>
 
-#include "QXmppCodec.h"
+#include "QXmppCodec_p.h"
 #include "QXmppRtpChannel.h"
 
 #include <cstring>
@@ -235,19 +235,13 @@ static qint16 ulaw2linear(quint8 u_val)
    return ((u_val & SIGN_BIT) ? (BIAS - t) : (t - BIAS));
 }
 
-/// Destroys an audio codec.
-
 QXmppCodec::~QXmppCodec()
 {
 }
 
-/// Destroys a video decoder.
-
 QXmppVideoDecoder::~QXmppVideoDecoder()
 {
 }
-
-/// Destroys a video encoder.
 
 QXmppVideoEncoder::~QXmppVideoEncoder()
 {

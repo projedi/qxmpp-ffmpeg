@@ -54,7 +54,6 @@ class TestUtils : public QObject
 
 private slots:
     void testCrc32();
-    void testDigestMd5();
     void testHmac();
     void testJid();
     void testMime();
@@ -89,27 +88,6 @@ private slots:
     void testEntityTimeResult();
 };
 
-class TestCodec : public QObject
-{
-    Q_OBJECT
-
-private slots:
-    void testTheoraDecoder();
-    void testTheoraEncoder();
-};
-
-class TestJingle : public QObject
-{
-    Q_OBJECT
-
-private slots:
-    void testSession();
-    void testTerminate();
-    void testAudioPayloadType();
-    void testVideoPayloadType();
-    void testRinging();
-};
-
 class TestPubSub : public QObject
 {
     Q_OBJECT
@@ -128,39 +106,6 @@ class TestServer : public QObject
     Q_OBJECT
 
 private slots:
+    void testConnect_data();
     void testConnect();
-};
-
-class TestStun : public QObject
-{
-    Q_OBJECT
-
-private slots:
-    void testFingerprint();
-    void testIntegrity();
-    void testIPv4Address();
-    void testIPv6Address();
-    void testXorIPv4Address();
-    void testXorIPv6Address();
-};
-
-class TestXmlRpc : public QObject
-{
-    Q_OBJECT
-
-private slots:
-    void testBase64();
-    void testBool();
-    void testDateTime();
-    void testDouble();
-    void testInt();
-    void testNil();
-    void testString();
-
-    void testArray();
-    void testStruct();
-
-    void testInvoke();
-    void testResponse();
-    void testResponseFault();
 };

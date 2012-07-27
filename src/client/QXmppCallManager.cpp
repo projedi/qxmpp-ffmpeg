@@ -26,7 +26,6 @@
 
 #include "QXmppCallManager.h"
 #include "QXmppClient.h"
-#include "QXmppCodec.h"
 #include "QXmppConstants.h"
 #include "QXmppJingleIq.h"
 #include "QXmppRtpChannel.h"
@@ -783,6 +782,7 @@ QXmppCallManager::~QXmppCallManager()
     delete d;
 }
 
+/// \cond
 QStringList QXmppCallManager::discoveryFeatures() const
 {
     return QStringList()
@@ -829,6 +829,7 @@ void QXmppCallManager::setClient(QXmppClient *client)
                     this, SLOT(_q_presenceReceived(QXmppPresence)));
     Q_ASSERT(check);
 }
+/// \endcond
 
 void QXmppCallManager::setCodecs(QList<CodecID> codecs) {
    d->codecs = codecs;

@@ -58,34 +58,6 @@ QXmppDiscoveryManager::~QXmppDiscoveryManager()
     delete d;
 }
 
-bool QXmppDiscoveryManager::handleStanza(const QDomElement &element)
-{
-    if (element.tagName() == "iq" && QXmppDiscoveryIq::isDiscoveryIq(element))
-    {
-        QXmppDiscoveryIq receivedIq;
-        receivedIq.parse(element);
-
-        if(receivedIq.type() == QXmppIq::Get &&
-           receivedIq.queryType() == QXmppDiscoveryIq::InfoQuery &&
-           (receivedIq.queryNode().isEmpty() || receivedIq.queryNode().startsWith(d->clientCapabilitiesNode)))
-        {
-            // respond to query
-            QXmppDiscoveryIq qxmppFeatures = capabilities();
-            qxmppFeatures.setId(receivedIq.id());
-            qxmppFeatures.setTo(receivedIq.from());
-            qxmppFeatures.setQueryNode(receivedIq.queryNode());
-            client()->sendPacket(qxmppFeatures);
-        }
-        else if(receivedIq.queryType() == QXmppDiscoveryIq::InfoQuery)
-            emit infoReceived(receivedIq);
-        else if(receivedIq.queryType() == QXmppDiscoveryIq::ItemsQuery)
-            emit itemsReceived(receivedIq);
-
-        return true;
-    }
-    return false;
-}
-
 /// Requests information from the specified XMPP entity.
 ///
 /// \param jid  The target entity's JID.
@@ -124,10 +96,7 @@ QString QXmppDiscoveryManager::requestItems(const QString& jid, const QString& n
         return QString();
 }
 
-QStringList QXmppDiscoveryManager::discoveryFeatures() const
-{
-    return QStringList() << ns_disco_info;
-}
+/// Returns the client's full capabilities.
 
 QXmppDiscoveryIq QXmppDiscoveryManager::capabilities()
 {
@@ -140,6 +109,7 @@ QXmppDiscoveryIq QXmppDiscoveryManager::capabilities()
     features
         << ns_data              // XEP-0004: Data Forms
         << ns_rsm               // XEP-0059: Result Set Management
+        << ns_xhtml_im          // XEP-0071: XHTML-IM
         << ns_chat_states       // XEP-0085: Chat State Notifications
         << ns_capabilities      // XEP-0115: Entity Capabilities
         << ns_ping              // XEP-0199: XMPP Ping
@@ -249,3 +219,38 @@ QString QXmppDiscoveryManager::clientName() const
 {
     return d->clientName;
 }
+
+/// \cond
+QStringList QXmppDiscoveryManager::discoveryFeatures() const
+{
+    return QStringList() << ns_disco_info;
+}
+
+bool QXmppDiscoveryManager::handleStanza(const QDomElement &element)
+{
+    if (element.tagName() == "iq" && QXmppDiscoveryIq::isDiscoveryIq(element))
+    {
+        QXmppDiscoveryIq receivedIq;
+        receivedIq.parse(element);
+
+        if(receivedIq.type() == QXmppIq::Get &&
+           receivedIq.queryType() == QXmppDiscoveryIq::InfoQuery &&
+           (receivedIq.queryNode().isEmpty() || receivedIq.queryNode().startsWith(d->clientCapabilitiesNode)))
+        {
+            // respond to query
+            QXmppDiscoveryIq qxmppFeatures = capabilities();
+            qxmppFeatures.setId(receivedIq.id());
+            qxmppFeatures.setTo(receivedIq.from());
+            qxmppFeatures.setQueryNode(receivedIq.queryNode());
+            client()->sendPacket(qxmppFeatures);
+        }
+        else if(receivedIq.queryType() == QXmppDiscoveryIq::InfoQuery)
+            emit infoReceived(receivedIq);
+        else if(receivedIq.queryType() == QXmppDiscoveryIq::ItemsQuery)
+            emit itemsReceived(receivedIq);
+
+        return true;
+    }
+    return false;
+}
+/// \endcond

@@ -27,38 +27,37 @@
 #include <QCoreApplication>
 #include <QDomDocument>
 #include <QEventLoop>
-#include <QVariant>
 #include <QtTest/QtTest>
 
 #include "QXmppArchiveIq.h"
 #include "QXmppBindIq.h"
 #include "QXmppClient.h"
-#include "QXmppCodec.h"
 #include "QXmppDiscoveryIq.h"
-#include "QXmppJingleIq.h"
-#include "QXmppMessage.h"
 #include "QXmppNonSASLAuth.h"
 #include "QXmppPasswordChecker.h"
-#include "QXmppPresence.h"
 #include "QXmppPubSubIq.h"
-#include "QXmppRpcIq.h"
-#include "QXmppSaslAuth.h"
 #include "QXmppSessionIq.h"
 #include "QXmppServer.h"
 #include "QXmppStreamFeatures.h"
-#include "QXmppStun.h"
 #include "QXmppUtils.h"
 #include "QXmppVCardIq.h"
 #include "QXmppVersionIq.h"
 #include "QXmppGlobal.h"
 #include "QXmppEntityTimeIq.h"
 
+#include "codec.h"
 #include "dataform.h"
+#include "iq.h"
+#include "jingle.h"
 #include "message.h"
 #include "presence.h"
 #include "register.h"
+#include "roster.h"
+#include "rpc.h"
 #include "rsm.h"
 #include "rtp.h"
+#include "sasl.h"
+#include "stun.h"
 #include "tests.h"
 
 void TestUtils::testCrc32()
@@ -68,25 +67,6 @@ void TestUtils::testCrc32()
 
     crc = QXmppUtils::generateCrc32(QByteArray("Hi There"));
     QCOMPARE(crc, 0xDB143BBEu);
-}
-
-void TestUtils::testDigestMd5()
-{
-    // empty
-    QMap<QByteArray, QByteArray> empty = QXmppSaslDigestMd5::parseMessage(QByteArray());
-    QCOMPARE(empty.size(), 0);
-    QCOMPARE(QXmppSaslDigestMd5::serializeMessage(empty), QByteArray());
-
-    // non-empty
-    const QByteArray bytes("number=12345,quoted_plain=\"quoted string\",quoted_quote=\"quoted\\\\slash\\\"quote\",string=string");
-
-    QMap<QByteArray, QByteArray> map = QXmppSaslDigestMd5::parseMessage(bytes);
-    QCOMPARE(map.size(), 4);
-    QCOMPARE(map["number"], QByteArray("12345"));
-    QCOMPARE(map["quoted_plain"], QByteArray("quoted string"));
-    QCOMPARE(map["quoted_quote"], QByteArray("quoted\\slash\"quote"));
-    QCOMPARE(map["string"], QByteArray("string"));
-    QCOMPARE(QXmppSaslDigestMd5::serializeMessage(map), bytes);
 }
 
 void TestUtils::testHmac()
@@ -155,7 +135,7 @@ void TestUtils::testMime()
 
 void TestUtils::testLibVersion()
 {
-    QCOMPARE(QXmppVersion(), QString("0.5.0"));
+    QCOMPARE(QXmppVersion(), QString("0.6.3"));
 }
 
 void TestUtils::testTimezoneOffset()
@@ -655,148 +635,6 @@ void TestPackets::testEntityTimeResult()
     serializePacket(entityTime, xml);
 }
 
-void TestCodec::testTheoraDecoder()
-{
-#ifdef QXMPP_USE_THEORA
-    QMap<QString, QString> params;
-    params.insert("delivery-method", "inline");
-    params.insert("configuration", "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");
-
-    QXmppTheoraDecoder decoder;
-    QCOMPARE(decoder.setParameters(params), true);
-
-    QXmppVideoFormat format = decoder.format();
-    QCOMPARE(format.frameSize(), QSize(320, 240));
-    QCOMPARE(format.pixelFormat(), QXmppVideoFrame::Format_YUV420P);
-#endif
-}
-
-void TestCodec::testTheoraEncoder()
-{
-#ifdef QXMPP_USE_THEORA
-    QXmppVideoFormat format;
-    format.setFrameSize(QSize(320, 240));
-    format.setPixelFormat(QXmppVideoFrame::Format_YUV420P);
-
-    QXmppTheoraEncoder encoder;
-    encoder.setFormat(format);
- 
-    QMap<QString, QString> params = encoder.parameters();
-    QCOMPARE(params.value("delivery-method"), QLatin1String("inline"));
-    QCOMPARE(params.value("configuration"), QLatin1String("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"));
-#endif
-}
-
-void TestJingle::testSession()
-{
-    const QByteArray xml(
-        "<iq"
-        " id=\"zid615d9\""
-        " to=\"juliet@capulet.lit/balcony\""
-        " from=\"romeo@montague.lit/orchard\""
-        " type=\"set\">"
-        "<jingle xmlns=\"urn:xmpp:jingle:1\""
-        " action=\"session-initiate\""
-        " initiator=\"romeo@montague.lit/orchard\""
-        " sid=\"a73sjjvkla37jfea\">"
-        "<content creator=\"initiator\" name=\"this-is-a-stub\">"
-        "<description xmlns=\"urn:xmpp:jingle:apps:stub:0\"/>"
-        "<transport xmlns=\"urn:xmpp:jingle:transports:stub:0\"/>"
-        "</content>"
-        "</jingle>"
-        "</iq>");
-
-    QXmppJingleIq session;
-    parsePacket(session, xml);
-    QCOMPARE(session.action(), QXmppJingleIq::SessionInitiate);
-    QCOMPARE(session.initiator(), QLatin1String("romeo@montague.lit/orchard"));
-    QCOMPARE(session.sid(), QLatin1String("a73sjjvkla37jfea"));
-    QCOMPARE(session.content().creator(), QLatin1String("initiator"));
-    QCOMPARE(session.content().name(), QLatin1String("this-is-a-stub"));
-    QCOMPARE(session.reason().text(), QString());
-    QCOMPARE(session.reason().type(), QXmppJingleIq::Reason::None);
-    serializePacket(session, xml);
-}
-
-void TestJingle::testTerminate()
-{
-    const QByteArray xml(
-        "<iq"
-        " id=\"le71fa63\""
-        " to=\"romeo@montague.lit/orchard\""
-        " from=\"juliet@capulet.lit/balcony\""
-        " type=\"set\">"
-        "<jingle xmlns=\"urn:xmpp:jingle:1\""
-        " action=\"session-terminate\""
-        " sid=\"a73sjjvkla37jfea\">"
-        "<reason>"
-        "<success/>"
-        "</reason>"
-        "</jingle>"
-        "</iq>");
-
-    QXmppJingleIq session;
-    parsePacket(session, xml);
-    QCOMPARE(session.action(), QXmppJingleIq::SessionTerminate);
-    QCOMPARE(session.initiator(), QString());
-    QCOMPARE(session.sid(), QLatin1String("a73sjjvkla37jfea"));
-    QCOMPARE(session.reason().text(), QString());
-    QCOMPARE(session.reason().type(), QXmppJingleIq::Reason::Success);
-    serializePacket(session, xml);
-}
-
-void TestJingle::testAudioPayloadType()
-{
-    const QByteArray xml("<payload-type id=\"103\" name=\"L16\" channels=\"2\" clockrate=\"16000\"/>");
-    QXmppJinglePayloadType payload;
-    parsePacket(payload, xml);
-    QCOMPARE(payload.id(), static_cast<unsigned char>(103));
-    QCOMPARE(payload.name(), QLatin1String("L16"));
-    QCOMPARE(payload.channels(), static_cast<unsigned char>(2));
-    QCOMPARE(payload.clockrate(), 16000u);
-    serializePacket(payload, xml);
-}
-
-void TestJingle::testVideoPayloadType()
-{
-    const QByteArray xml(
-        "<payload-type id=\"98\" name=\"theora\" clockrate=\"90000\">"
-            "<parameter name=\"height\" value=\"768\"/>"
-            "<parameter name=\"width\" value=\"1024\"/>"
-        "</payload-type>");
-    QXmppJinglePayloadType payload;
-    parsePacket(payload, xml);
-    QCOMPARE(payload.id(), static_cast<unsigned char>(98));
-    QCOMPARE(payload.name(), QLatin1String("theora"));
-    QCOMPARE(payload.clockrate(), 90000u);
-    QCOMPARE(payload.parameters().size(), 2);
-    QCOMPARE(payload.parameters().value("height"), QLatin1String("768"));
-    QCOMPARE(payload.parameters().value("width"), QLatin1String("1024"));
-    serializePacket(payload, xml);
-}
-
-void TestJingle::testRinging()
-{
-    const QByteArray xml(
-        "<iq"
-        " id=\"tgr515bt\""
-        " to=\"romeo@montague.lit/orchard\""
-        " from=\"juliet@capulet.lit/balcony\""
-        " type=\"set\">"
-        "<jingle xmlns=\"urn:xmpp:jingle:1\""
-        " action=\"session-info\""
-        " initiator=\"romeo@montague.lit/orchard\""
-        " sid=\"a73sjjvkla37jfea\">"
-        "<ringing xmlns=\"urn:xmpp:jingle:apps:rtp:info:1\"/>"
-        "</jingle>"
-        "</iq>");
-
-    QXmppJingleIq iq;
-    parsePacket(iq, xml);
-    QCOMPARE(iq.ringing(), true);
-    serializePacket(iq, xml);
-}
-
 void TestPubSub::testItems()
 {
     const QByteArray xml(
@@ -1011,11 +849,30 @@ private:
     QString m_password;
 };
 
+void TestServer::testConnect_data()
+{
+    QTest::addColumn<QString>("username");
+    QTest::addColumn<QString>("password");
+    QTest::addColumn<QString>("mechanism");
+    QTest::addColumn<bool>("connected");
+
+    QTest::newRow("plain-good") << "testuser" << "testpwd" << "PLAIN" << true;
+    QTest::newRow("plain-bad-username") << "baduser" << "testpwd" << "PLAIN" << false;
+    QTest::newRow("plain-bad-password") << "testuser" << "badpwd" << "PLAIN" << false;
+
+    QTest::newRow("digest-good") << "testuser" << "testpwd" << "DIGEST-MD5" << true;
+    QTest::newRow("digest-bad-username") << "baduser" << "testpwd" << "DIGEST-MD5" << false;
+    QTest::newRow("digest-bad-password") << "testuser" << "badpwd" << "DIGEST-MD5" << false;
+}
+
 void TestServer::testConnect()
 {
+    QFETCH(QString, username);
+    QFETCH(QString, password);
+    QFETCH(QString, mechanism);
+    QFETCH(bool, connected);
+
     const QString testDomain("localhost");
-    const QString testPassword("testpwd");
-    const QString testUser("testuser");
     const QHostAddress testHost(QHostAddress::LocalHost);
     const quint16 testPort = 12345;
 
@@ -1023,7 +880,7 @@ void TestServer::testConnect()
     logger.setLoggingType(QXmppLogger::StdoutLogging);
 
     // prepare server
-    TestPasswordChecker passwordChecker(testUser, testPassword);
+    TestPasswordChecker passwordChecker("testuser", "testpwd");
 
     QXmppServer server;
     server.setDomain(testDomain);
@@ -1044,302 +901,21 @@ void TestServer::testConnect()
     QXmppConfiguration config;
     config.setDomain(testDomain);
     config.setHost(testHost.toString());
-    config.setUser(testUser);
     config.setPort(testPort);
-
-    // check bad password fails
-    config.setPassword("badpassword");
+    config.setUser(username);
+    config.setPassword(password);
+    config.setSaslAuthMechanism(mechanism);
     client.connectToServer(config);
     loop.exec();
-    QCOMPARE(client.isConnected(), false);
-
-    // check correct password works
-    config.setPassword(testPassword);
-    client.connectToServer(config);
-    loop.exec();
-    QCOMPARE(client.isConnected(), true);
-}
-
-void TestStun::testFingerprint()
-{
-    // without fingerprint
-    QXmppStunMessage msg;
-    msg.setType(0x0001);
-    QCOMPARE(msg.encode(QByteArray(), false),
-             QByteArray("\x00\x01\x00\x00\x21\x12\xA4\x42\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", 20));
-
-    // with fingerprint
-    QCOMPARE(msg.encode(QByteArray(), true),
-             QByteArray("\x00\x01\x00\x08\x21\x12\xA4\x42\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\x28\x00\x04\xB2\xAA\xF9\xF6", 28));
-}
-
-void TestStun::testIntegrity()
-{
-    QXmppStunMessage msg;
-    msg.setType(0x0001);
-    QCOMPARE(msg.encode(QByteArray("somesecret"), false),
-             QByteArray("\x00\x01\x00\x18\x21\x12\xA4\x42\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\x14\x96\x4B\x40\xD1\x84\x67\x6A\xFD\xB5\xE0\x7C\xC5\x1F\xFB\xBD\xA2\x61\xAF\xB1\x26", 44));
-}
-
-void TestStun::testIPv4Address()
-{
-    // encode
-    QXmppStunMessage msg;
-    msg.setType(0x0001);
-    msg.mappedHost = QHostAddress("127.0.0.1");
-    msg.mappedPort = 12345;
-    QByteArray packet = msg.encode(QByteArray(), false);
-    QCOMPARE(packet,
-             QByteArray("\x00\x01\x00\x0C\x21\x12\xA4\x42\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x08\x00\x01\x30\x39\x7F\x00\x00\x01", 32));
-
-    // decode
-    QXmppStunMessage msg2;
-    msg2.decode(packet);
-    QCOMPARE(msg2.mappedHost, QHostAddress("127.0.0.1"));
-    QCOMPARE(msg2.mappedPort, quint16(12345));
-}
-
-void TestStun::testIPv6Address()
-{
-    // encode
-    QXmppStunMessage msg;
-    msg.setType(0x0001);
-    msg.mappedHost = QHostAddress("::1");
-    msg.mappedPort = 12345;
-    const QByteArray packet = msg.encode(QByteArray(), false);
-    QCOMPARE(packet,
-             QByteArray("\x00\x01\x00\x18\x21\x12\xA4\x42\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x14\x00\x02\x30\x39\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01", 44));
-
-    // decode
-    QXmppStunMessage msg2;
-    msg2.decode(packet);
-    QCOMPARE(msg2.mappedHost, QHostAddress("::1"));
-    QCOMPARE(msg2.mappedPort, quint16(12345));
-}
-
-void TestStun::testXorIPv4Address()
-{
-    // encode
-    QXmppStunMessage msg;
-    msg.setType(0x0001);
-    msg.xorMappedHost = QHostAddress("127.0.0.1");
-    msg.xorMappedPort = 12345;
-    QByteArray packet = msg.encode(QByteArray(), false);
-    QCOMPARE(packet,
-             QByteArray("\x00\x01\x00\x0C\x21\x12\xA4\x42\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x20\x00\x08\x00\x01\x11\x2B\x5E\x12\xA4\x43", 32));
-
-    // decode
-    QXmppStunMessage msg2;
-    msg2.decode(packet);
-    QCOMPARE(msg2.xorMappedHost, QHostAddress("127.0.0.1"));
-    QCOMPARE(msg2.xorMappedPort, quint16(12345));
-}
-
-void TestStun::testXorIPv6Address()
-{
-    // encode
-    QXmppStunMessage msg;
-    msg.setType(0x0001);
-    msg.xorMappedHost = QHostAddress("::1");
-    msg.xorMappedPort = 12345;
-    const QByteArray packet = msg.encode(QByteArray(), false);
-    QCOMPARE(packet,
-             QByteArray("\x00\x01\x00\x18\x21\x12\xA4\x42\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x20\x00\x14\x00\x02\x11\x2B\x21\x12\xA4\x42\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01", 44));
-
-    // decode
-    QXmppStunMessage msg2;
-    msg2.decode(packet);
-    QCOMPARE(msg2.xorMappedHost, QHostAddress("::1"));
-    QCOMPARE(msg2.xorMappedPort, quint16(12345));
-}
-
-static void checkVariant(const QVariant &value, const QByteArray &xml)
-{
-    // serialise
-    QBuffer buffer;
-    buffer.open(QIODevice::ReadWrite);
-    QXmlStreamWriter writer(&buffer);
-    QXmppRpcMarshaller::marshall(&writer, value);
-    qDebug() << "expect " << xml;
-    qDebug() << "writing" << buffer.data();
-    QCOMPARE(buffer.data(), xml);
-
-    // parse
-    QDomDocument doc;
-    QCOMPARE(doc.setContent(xml, true), true);
-    QDomElement element = doc.documentElement();
-    QStringList errors;
-    QVariant test = QXmppRpcMarshaller::demarshall(element, errors);
-    if (!errors.isEmpty())
-        qDebug() << errors;
-    QCOMPARE(errors, QStringList());
-    QCOMPARE(test, value);
-}
-
-void TestXmlRpc::testBase64()
-{
-    checkVariant(QByteArray("\0\1\2\3", 4),
-                 QByteArray("<value><base64>AAECAw==</base64></value>"));
-}
-
-void TestXmlRpc::testBool()
-{
-    checkVariant(false,
-                 QByteArray("<value><boolean>0</boolean></value>"));
-    checkVariant(true,
-                 QByteArray("<value><boolean>1</boolean></value>"));
-}
-
-void TestXmlRpc::testDateTime()
-{
-    checkVariant(QDateTime(QDate(1998, 7, 17), QTime(14, 8, 55)),
-                 QByteArray("<value><dateTime.iso8601>1998-07-17T14:08:55</dateTime.iso8601></value>"));
-}
-
-void TestXmlRpc::testDouble()
-{
-    checkVariant(double(-12.214),
-                 QByteArray("<value><double>-12.214</double></value>"));
-}
-
-void TestXmlRpc::testInt()
-{
-    checkVariant(int(-12),
-                 QByteArray("<value><i4>-12</i4></value>"));
-}
-
-void TestXmlRpc::testNil()
-{
-    checkVariant(QVariant(),
-                 QByteArray("<value><nil/></value>"));
-}
-
-void TestXmlRpc::testString()
-{
-    checkVariant(QString("hello world"),
-                 QByteArray("<value><string>hello world</string></value>"));
-}
-
-void TestXmlRpc::testArray()
-{
-    checkVariant(QVariantList() << QString("hello world") << double(-12.214),
-                 QByteArray("<value><array><data>"
-                            "<value><string>hello world</string></value>"
-                            "<value><double>-12.214</double></value>"
-                            "</data></array></value>"));
-}
-
-void TestXmlRpc::testStruct()
-{
-    QMap<QString, QVariant> map;
-    map["bar"] = QString("hello world");
-    map["foo"] = double(-12.214);
-    checkVariant(map,
-                 QByteArray("<value><struct>"
-                            "<member>"
-                                "<name>bar</name>"
-                                "<value><string>hello world</string></value>"
-                            "</member>"
-                            "<member>"
-                                "<name>foo</name>"
-                                "<value><double>-12.214</double></value>"
-                            "</member>"
-                            "</struct></value>"));
-}
-
-void TestXmlRpc::testInvoke()
-{
-    const QByteArray xml(
-        "<iq"
-        " id=\"rpc1\""
-        " to=\"responder@company-a.com/jrpc-server\""
-        " from=\"requester@company-b.com/jrpc-client\""
-        " type=\"set\">"
-        "<query xmlns=\"jabber:iq:rpc\">"
-        "<methodCall>"
-        "<methodName>examples.getStateName</methodName>"
-        "<params>"
-        "<param>"
-        "<value><i4>6</i4></value>"
-        "</param>"
-        "</params>"
-        "</methodCall>"
-        "</query>"
-        "</iq>");
-
-    QXmppRpcInvokeIq iq;
-    parsePacket(iq, xml);
-    QCOMPARE(iq.method(), QLatin1String("examples.getStateName"));
-    QCOMPARE(iq.arguments(), QVariantList() << int(6));
-    serializePacket(iq, xml);
-}
-
-void TestXmlRpc::testResponse()
-{
-    const QByteArray xml(
-        "<iq"
-        " id=\"rpc1\""
-        " to=\"requester@company-b.com/jrpc-client\""
-        " from=\"responder@company-a.com/jrpc-server\""
-        " type=\"result\">"
-        "<query xmlns=\"jabber:iq:rpc\">"
-        "<methodResponse>"
-        "<params>"
-        "<param>"
-        "<value><string>Colorado</string></value>"
-        "</param>"
-        "</params>"
-        "</methodResponse>"
-        "</query>"
-        "</iq>");
-
-    QXmppRpcResponseIq iq;
-    parsePacket(iq, xml);
-    QCOMPARE(iq.faultCode(), 0);
-    QCOMPARE(iq.faultString(), QString());
-    QCOMPARE(iq.values(), QVariantList() << QString("Colorado"));
-    serializePacket(iq, xml);
-}
-
-void TestXmlRpc::testResponseFault()
-{
-    const QByteArray xml(
-        "<iq"
-        " id=\"rpc1\""
-        " to=\"requester@company-b.com/jrpc-client\""
-        " from=\"responder@company-a.com/jrpc-server\""
-        " type=\"result\">"
-        "<query xmlns=\"jabber:iq:rpc\">"
-        "<methodResponse>"
-        "<fault>"
-        "<value>"
-            "<struct>"
-                "<member>"
-                    "<name>faultCode</name>"
-                    "<value><i4>404</i4></value>"
-                "</member>"
-                "<member>"
-                    "<name>faultString</name>"
-                    "<value><string>Not found</string></value>"
-                "</member>"
-            "</struct>"
-        "</value>"
-        "</fault>"
-        "</methodResponse>"
-        "</query>"
-        "</iq>");
-
-    QXmppRpcResponseIq iq;
-    parsePacket(iq, xml);
-    QCOMPARE(iq.faultCode(), 404);
-    QCOMPARE(iq.faultString(), QLatin1String("Not found"));
-    QCOMPARE(iq.values(), QVariantList());
-    serializePacket(iq, xml);
+    QCOMPARE(client.isConnected(), connected);
 }
 
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
+
+    QXmppPresence pres;
+    pres.availableStatusType();
 
     // run tests
     int errors = 0;
@@ -1350,11 +926,16 @@ int main(int argc, char *argv[])
     TestPackets testPackets;
     errors += QTest::qExec(&testPackets);
 
+#ifdef QXMPP_AUTOTEST_INTERNAL
     TestCodec testCodec;
     errors += QTest::qExec(&testCodec);
+#endif
 
     tst_QXmppDataForm testDataForm;
     errors += QTest::qExec(&testDataForm);
+
+    tst_QXmppIq testIq;
+    errors += QTest::qExec(&testIq);
 
     TestJingle testJingle;
     errors += QTest::qExec(&testJingle);
@@ -1374,8 +955,22 @@ int main(int argc, char *argv[])
     tst_QXmppResultSet testRsm;
     errors += QTest::qExec(&testRsm);
 
+    tst_QXmppRosterIq testRoster;
+    errors += QTest::qExec(&testRoster);
+
     tst_QXmppRtpPacket testRtp;
     errors += QTest::qExec(&testRtp);
+
+#ifdef QXMPP_AUTOTEST_INTERNAL
+    tst_QXmppSasl testSasl;
+    errors += QTest::qExec(&testSasl);
+
+    tst_QXmppSaslClient testSaslClient;
+    errors += QTest::qExec(&testSaslClient);
+
+    tst_QXmppSaslServer testSaslServer;
+    errors += QTest::qExec(&testSaslServer);
+#endif
 
     TestServer testServer;
     errors += QTest::qExec(&testServer);

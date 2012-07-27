@@ -2,11 +2,10 @@
  * Copyright (C) 2008-2012 The QXmpp developers
  *
  * Authors:
- *	Manjeet Dahiya
- *	Jeremy Lainé
+ *  Jeremy Lainé
  *
  * Source:
- *	http://code.google.com/p/qxmpp
+ *  http://code.google.com/p/qxmpp
  *
  * This file is a part of QXmpp library.
  *
@@ -22,22 +21,14 @@
  *
  */
 
-#include <QDialog>
-#include "QXmppLogger.h"
+#include <QObject>
 
-class QTextBrowser;
-
-class LogViewer : public QDialog
+class TestCodec : public QObject
 {
     Q_OBJECT
 
-public:
-    LogViewer();
-
 private slots:
-    void log(QXmppLogger::MessageType type, const QString& text);
-
-private:
-    QTextBrowser *m_browser;
+    void testTheoraDecoder();
+    void testTheoraEncoder();
 };
 

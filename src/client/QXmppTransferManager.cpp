@@ -291,6 +291,7 @@ QXmppTransferFileInfo QXmppTransferJob::fileInfo() const
     return d->fileInfo;
 }
 
+/// \cond
 QDateTime QXmppTransferJob::fileDate() const
 {
     return d->fileInfo.date();
@@ -310,6 +311,7 @@ qint64 QXmppTransferJob::fileSize() const
 {
     return d->fileInfo.size();
 }
+/// \endcond
 
 /// Returns the job's transfer method.
 ///
@@ -391,6 +393,7 @@ void QXmppTransferJob::terminate(QXmppTransferJob::Error cause)
     QTimer::singleShot(0, this, SLOT(_q_terminated()));
 }
 
+/// \cond
 QXmppTransferIncomingJob::QXmppTransferIncomingJob(const QString& jid, QXmppClient* client, QObject* parent)
     : QXmppTransferJob(jid, IncomingDirection, client, parent)
     , m_candidateClient(0)
@@ -670,6 +673,7 @@ void QXmppTransferOutgoingJob::_q_sendData()
         emit progress(d->done, fileSize());
     }
 }
+/// \endcond
 
 class QXmppTransferManagerPrivate
 {
@@ -755,19 +759,6 @@ QXmppTransferManager::QXmppTransferManager()
 QXmppTransferManager::~QXmppTransferManager()
 {
     delete d;
-}
-
-void QXmppTransferManager::setClient(QXmppClient *client)
-{
-    bool check;
-    Q_UNUSED(check);
-
-    QXmppClientExtension::setClient(client);
-
-    // XEP-0047: In-Band Bytestreams
-    check = connect(client, SIGNAL(iqReceived(QXmppIq)),
-                    this, SLOT(_q_iqReceived(QXmppIq)));
-    Q_ASSERT(check);
 }
 
 void QXmppTransferManager::byteStreamIqReceived(const QXmppByteStreamIq &iq)
@@ -868,6 +859,7 @@ void QXmppTransferManager::byteStreamSetReceived(const QXmppByteStreamIq &iq)
     job->connectToHosts(iq);
 }
 
+/// \cond
 QStringList QXmppTransferManager::discoveryFeatures() const
 {
     return QStringList()
@@ -923,6 +915,20 @@ bool QXmppTransferManager::handleStanza(const QDomElement &element)
 
     return false;
 }
+
+void QXmppTransferManager::setClient(QXmppClient *client)
+{
+    bool check;
+    Q_UNUSED(check);
+
+    QXmppClientExtension::setClient(client);
+
+    // XEP-0047: In-Band Bytestreams
+    check = connect(client, SIGNAL(iqReceived(QXmppIq)),
+                    this, SLOT(_q_iqReceived(QXmppIq)));
+    Q_ASSERT(check);
+}
+/// \endcond
 
 void QXmppTransferManager::ibbCloseIqReceived(const QXmppIbbCloseIq &iq)
 {
