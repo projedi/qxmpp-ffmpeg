@@ -150,7 +150,7 @@ void QXmppRtpChannel::setRemotePayloadTypes(const QList<QXmppJinglePayloadType> 
             for(AVCodec* codec = av_codec_next(0); codec!=0; codec = av_codec_next(codec)) {
                CodecID cid = codec->id;
                if(codec->type != AVMEDIA_TYPE_VIDEO) continue;
-               if(payload.name() == avcodec_get_name(cid)) {
+               if(incomingType.name() == avcodec_get_name(cid)) {
                   if(av_codec_is_decoder(codec)) foundDecoder = true;
                   if(av_codec_is_encoder(codec)) foundEncoder = true;
                }
