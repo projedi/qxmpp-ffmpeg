@@ -144,16 +144,31 @@ void QXmppRtpChannel::setRemotePayloadTypes(const QList<QXmppJinglePayloadType> 
     foreach (const QXmppJinglePayloadType &incomingType, remotePayloadTypes) {
         // check we support this payload type
         int outgoingIndex = m_outgoingPayloadTypes.indexOf(incomingType);
-        if (outgoingIndex < 0)
-            continue;
-        QXmppJinglePayloadType outgoingType = m_outgoingPayloadTypes[outgoingIndex];
+        if (outgoingIndex < 0) {
+            bool foundDecoder = false;
+            bool foundEncoder = false;
+            for(AVCodec* codec = av_codec_next(0); codec!=0; codec = av_codec_next(codec)) {
+               CodecID cid = codec->id;
+               if(codec->type != AVMEDIA_TYPE_VIDEO) continue;
+               if(payload.name() == avcodec_get_name(cid)) {
+                  if(av_codec_is_decoder(codec)) foundDecoder = true;
+                  if(av_codec_is_encoder(codec)) foundEncoder = true;
+               }
+            }
+            if (foundDecoder && foundEncoder) {
+              commonIncomingTypes << incomingType;
+              commonOutgoingTypes << incomingType;
+            }
+        } else {
+           QXmppJinglePayloadType outgoingType = m_outgoingPayloadTypes[outgoingIndex];
 
-        // be kind and try to adopt the other agent's numbering
-        if (!m_outgoingPayloadNumbered && outgoingType.id() > 95) {
-            outgoingType.setId(incomingType.id());
+           // be kind and try to adopt the other agent's numbering
+           if (!m_outgoingPayloadNumbered && outgoingType.id() > 95) {
+               outgoingType.setId(incomingType.id());
+           }
+           commonIncomingTypes << incomingType;
+           commonOutgoingTypes << outgoingType;
         }
-        commonIncomingTypes << incomingType;
-        commonOutgoingTypes << outgoingType;
     }
     if (commonOutgoingTypes.isEmpty()) {
         qWarning("QXmppRtpChannel could not negociate a common codec");

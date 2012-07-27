@@ -303,6 +303,8 @@ void QXmppCallPrivate::handleRequest(const QXmppJingleIq &iq)
             return;
         }
 
+    } else if (iq.action() == QXmppJingleIq::ContentReject) {
+        qDebug("Got content-reject");
     }
 }
 
