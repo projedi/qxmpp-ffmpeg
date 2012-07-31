@@ -400,15 +400,14 @@ QXmppFFmpegDecoder::~QXmppFFmpegDecoder()
     delete d;
 }
 
-//TODO: Properly get values from codec context
 QXmppVideoFormat QXmppFFmpegDecoder::format() const
 {
     QXmppVideoFormat format;
-    format.setFrameRate(30.0);
-    format.setFrameSize(QSize(640, 480));
+    format.setFrameRate(d->codecContext->time_base.den);
+    format.setFrameSize(QSize(d->codecContext->width, d->codecContext->height));
     format.setPixelFormat(PIX_FMT_YUV420P);
-    format.setBitrate(800000);
-    format.setGopSize(5);
+    format.setBitrate(d->codecContext->bit_rate);
+    format.setGopSize(d->codecContext->gop_size);
     return format;
 }
 
@@ -451,12 +450,23 @@ QXmppFFmpegEncoder::QXmppFFmpegEncoder(CodecID codecID) {
    d->codec = avcodec_find_encoder(codecID);
    d->codecContext = 0;
    d->pts = 0;
+   QXmppVideoFormat format;
+    format.setFrameRate(15.0);
+    format.setFrameSize(QSize(320, 240));
+    format.setPixelFormat(PIX_FMT_YUYV422);
+    format.setGopSize(5);
+    format.setBitrate(800000);
+   setFormat(format);
 }
 
 QXmppFFmpegEncoder::~QXmppFFmpegEncoder() { delete d; }
 
 bool QXmppFFmpegEncoder::setFormat(const QXmppVideoFormat &format)
 {
+   if(d->codecContext) {
+      avcodec_close(d->codecContext);
+      av_free(d->codecContext);
+   }
     d->codecContext = avcodec_alloc_context3(d->codec);
     //TODO: Properly detect pix_fmt
     d->codecContext->pix_fmt = d->codec->pix_fmts[0];
