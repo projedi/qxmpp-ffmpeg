@@ -390,6 +390,7 @@ QXmppFFmpegDecoder::QXmppFFmpegDecoder(CodecID codecID)
     d = new QXmppFFmpegDecoderPrivate;
     d->codec = avcodec_find_decoder(codecID);
     d->codecContext = avcodec_alloc_context3(d->codec);
+    d->codecContext->strict_std_compliance = -2;
     if(avcodec_open2(d->codecContext,d->codec,0) < 0) {
         qWarning("Couldn't initialize h264 decoder");
     }
