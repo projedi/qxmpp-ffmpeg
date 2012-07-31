@@ -407,7 +407,7 @@ QXmppVideoFormat QXmppFFmpegDecoder::format() const
     QXmppVideoFormat format;
     format.setFrameRate(d->codecContext->time_base.den);
     format.setFrameSize(QSize(d->codecContext->width, d->codecContext->height));
-    format.setPixelFormat(PIX_FMT_YUV420P);
+    format.setPixelFormat(d->codecContext->pix_fmt);
     format.setBitrate(d->codecContext->bit_rate);
     format.setGopSize(d->codecContext->gop_size);
     return format;
@@ -452,12 +452,16 @@ QXmppFFmpegEncoder::QXmppFFmpegEncoder(CodecID codecID) {
    d = new QXmppFFmpegEncoderPrivate;
    d->scaler = 0;
    d->codec = avcodec_find_encoder(codecID);
+   if(!d->codec) qWarning("Encoder not found");
    d->codecContext = 0;
    d->pts = 0;
    QXmppVideoFormat format;
     format.setFrameRate(30.0);
     format.setFrameSize(QSize(640, 480));
-    format.setPixelFormat(PIX_FMT_YUV420P);
+    if(d->codec->pix_fmts)
+       format.setPixelFormat(d->codec->pix_fmts[0]);
+    else
+       format.setPixelFormat(PIX_FMT_YUV420P);
     format.setGopSize(5);
     format.setBitrate(800000);
    setFormat(format);
@@ -484,13 +488,18 @@ bool QXmppFFmpegEncoder::setFormat(const QXmppVideoFormat &format)
    }
     d->codecContext = avcodec_alloc_context3(d->codec);
     //TODO: Properly detect pix_fmt
-    d->codecContext->pix_fmt = d->codec->pix_fmts[0];
+    if(d->codec->pix_fmts) 
+       d->codecContext->pix_fmt = d->codec->pix_fmts[0];
+    else {
+       d->codecContext->pix_fmt = format.pixelFormat();
+    }
     d->codecContext->width = format.frameWidth();
     d->codecContext->height = format.frameHeight();
     d->codecContext->time_base.num = 1;
     d->codecContext->time_base.den = qRound(format.frameRate());
     d->codecContext->gop_size = format.gopSize();
     d->codecContext->bit_rate = format.bitrate();
+    d->codecContext->strict_std_compliance = -2;
     if(avcodec_open2(d->codecContext,d->codec,0)<0) {
         qWarning("Couldn't initialize encoder");
         d->formatLocker.unlock();
