@@ -213,12 +213,16 @@ public:
     int bitrate() const { return m_bitrate; }
     void setBitrate(int bitrate) { m_bitrate = bitrate; }
 
+    int qscale() const { return m_qscale; }
+    void setQscale(int qscale) { m_qscale = qscale; }
+
 private:
     qreal m_frameRate;
     QSize m_frameSize;
     PixelFormat m_pixelFormat;
     int m_gopSize;
     int m_bitrate;
+    int m_qscale;
 };
 
 

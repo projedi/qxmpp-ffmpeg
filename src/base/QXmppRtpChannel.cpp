@@ -790,6 +790,7 @@ QXmppRtpVideoChannel::QXmppRtpVideoChannel(QList<CodecID> codecs, QObject *paren
     d->outgoingFormat.setPixelFormat(PIX_FMT_YUYV422);
     d->outgoingFormat.setGopSize(5);
     d->outgoingFormat.setBitrate(800000);
+    d->outgoingFormat.setQscale(-1);
 
     // set supported codecs
     QXmppVideoEncoder *encoder;

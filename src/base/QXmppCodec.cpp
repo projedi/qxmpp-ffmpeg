@@ -465,6 +465,7 @@ QXmppFFmpegEncoder::QXmppFFmpegEncoder(CodecID codecID) {
        format.setPixelFormat(PIX_FMT_YUV420P);
     format.setGopSize(5);
     format.setBitrate(800000);
+    format.setQscale(-1);
    setFormat(format);
 }
 
@@ -501,6 +502,10 @@ bool QXmppFFmpegEncoder::setFormat(const QXmppVideoFormat &format)
     d->codecContext->gop_size = format.gopSize();
     d->codecContext->bit_rate = format.bitrate();
     d->codecContext->strict_std_compliance = -2;
+    if(format.qscale() > 0) {
+       d->codecContext->flags |= CODEC_FLAG_QSCALE;
+       d->codecContext->global_quality = FF_QP2LAMBDA * format.qscale();
+    }
     if(avcodec_open2(d->codecContext,d->codec,0)<0) {
         qWarning("Couldn't initialize encoder");
         d->formatLocker.unlock();
