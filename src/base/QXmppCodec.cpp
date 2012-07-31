@@ -28,6 +28,8 @@
 #include <QDataStream>
 #include <QDebug>
 #include <QSize>
+#include <QMutex>
+#include <QMutexLocker>
 
 #include "QXmppCodec_p.h"
 #include "QXmppRtpChannel.h"
@@ -442,30 +444,43 @@ public:
    AVCodecContext* codecContext;
    SwsContext* scaler;
    int64_t pts;
+   QMutex formatLocker;
 };
 
 QXmppFFmpegEncoder::QXmppFFmpegEncoder(CodecID codecID) {
+   qDebug("Initializing ffmpeg encoder");
    d = new QXmppFFmpegEncoderPrivate;
    d->scaler = 0;
    d->codec = avcodec_find_encoder(codecID);
    d->codecContext = 0;
    d->pts = 0;
    QXmppVideoFormat format;
-    format.setFrameRate(15.0);
-    format.setFrameSize(QSize(320, 240));
-    format.setPixelFormat(PIX_FMT_YUYV422);
+    format.setFrameRate(30.0);
+    format.setFrameSize(QSize(640, 480));
+    format.setPixelFormat(PIX_FMT_YUV420P);
     format.setGopSize(5);
     format.setBitrate(800000);
    setFormat(format);
 }
 
-QXmppFFmpegEncoder::~QXmppFFmpegEncoder() { delete d; }
+QXmppFFmpegEncoder::~QXmppFFmpegEncoder() {
+   if(d->codecContext) {
+      qDebug("Freeing codec context as its a destructor");
+      avcodec_close(d->codecContext);
+      av_free(d->codecContext);
+   }
+   delete d;
+}
 
 bool QXmppFFmpegEncoder::setFormat(const QXmppVideoFormat &format)
 {
+   d->formatLocker.lock();
+   qDebug("Setting up encoder format");
    if(d->codecContext) {
+      qDebug("Freeing codec context as we have it");
       avcodec_close(d->codecContext);
       av_free(d->codecContext);
+      qDebug("Freeing codec context successfully");
    }
     d->codecContext = avcodec_alloc_context3(d->codec);
     //TODO: Properly detect pix_fmt
@@ -477,14 +492,18 @@ bool QXmppFFmpegEncoder::setFormat(const QXmppVideoFormat &format)
     d->codecContext->gop_size = format.gopSize();
     d->codecContext->bit_rate = format.bitrate();
     if(avcodec_open2(d->codecContext,d->codec,0)<0) {
-        qWarning("Couldn't initialize h264 encoder");
+        qWarning("Couldn't initialize encoder");
+        d->formatLocker.unlock();
         return false;
     }
+    qDebug("Successfully set up encoder format");
+    d->formatLocker.unlock();
     return true;
 }
 
 QList<QByteArray> QXmppFFmpegEncoder::handleFrame(AVFrame *frame)
 {
+   QMutexLocker(&d->formatLocker);
    AVFrame* newFrame = avcodec_alloc_frame();
    d->scaler = sws_getCachedContext( d->scaler, frame->width, frame->height
                                 , (PixelFormat)frame->format
