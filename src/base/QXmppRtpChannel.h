@@ -70,7 +70,7 @@ public:
     void setRemotePayloadTypes(const QList<QXmppJinglePayloadType> &remotePayloadTypes);
 
 protected:
-    virtual void payloadTypesChanged();
+    virtual void payloadTypesChanged() = 0;
 
     QList<QXmppJinglePayloadType> m_incomingPayloadTypes;
     QList<QXmppJinglePayloadType> m_outgoingPayloadTypes;
@@ -207,10 +207,18 @@ public:
         m_pixelFormat = pixelFormat;
     }
 
+    int gopSize() const { return m_gopSize; }
+    void setGopSize(int gopSize) { m_gopSize = gopSize; }
+
+    int bitrate() const { return m_bitrate; }
+    void setBitrate(int bitrate) { m_bitrate = bitrate; }
+
 private:
     qreal m_frameRate;
     QSize m_frameSize;
     PixelFormat m_pixelFormat;
+    int m_gopSize;
+    int m_bitrate;
 };
 
 

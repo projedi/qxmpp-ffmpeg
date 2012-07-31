@@ -407,6 +407,8 @@ QXmppVideoFormat QXmppFFmpegDecoder::format() const
     format.setFrameRate(30.0);
     format.setFrameSize(QSize(640, 480));
     format.setPixelFormat(PIX_FMT_YUV420P);
+    format.setBitrate(800000);
+    format.setGopSize(5);
     return format;
 }
 
@@ -462,8 +464,10 @@ bool QXmppFFmpegEncoder::setFormat(const QXmppVideoFormat &format)
     d->codecContext->height = format.frameHeight();
     d->codecContext->time_base.num = 1;
     d->codecContext->time_base.den = qRound(format.frameRate());
-    d->codecContext->gop_size = 5;
-    d->codecContext->bit_rate = 800000;
+    //d->codecContext->gop_size = 5;
+    d->codecContext->gop_size = format.gopSize();
+    //d->codecContext->bit_rate = 800000;
+    d->codecContext->bit_rate = format.bitrate();
     if(avcodec_open2(d->codecContext,d->codec,0)<0) {
         qWarning("Couldn't initialize h264 encoder");
         return false;
