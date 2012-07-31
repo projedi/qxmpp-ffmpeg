@@ -464,9 +464,7 @@ bool QXmppFFmpegEncoder::setFormat(const QXmppVideoFormat &format)
     d->codecContext->height = format.frameHeight();
     d->codecContext->time_base.num = 1;
     d->codecContext->time_base.den = qRound(format.frameRate());
-    //d->codecContext->gop_size = 5;
     d->codecContext->gop_size = format.gopSize();
-    //d->codecContext->bit_rate = 800000;
     d->codecContext->bit_rate = format.bitrate();
     if(avcodec_open2(d->codecContext,d->codec,0)<0) {
         qWarning("Couldn't initialize h264 encoder");
