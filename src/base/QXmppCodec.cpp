@@ -488,14 +488,14 @@ QList<QByteArray> QXmppFFmpegEncoder::handleFrame(AVFrame *frame)
    AVFrame* newFrame = avcodec_alloc_frame();
    d->scaler = sws_getCachedContext( d->scaler, frame->width, frame->height
                                 , (PixelFormat)frame->format
-                                , frame->width, frame->height, d->codecContext->pix_fmt
+                                , d->codecContext->width, d->codecContext->height, d->codecContext->pix_fmt
                                 , SWS_BICUBIC, 0, 0, 0);
-   avpicture_alloc( (AVPicture*)newFrame, d->codecContext->pix_fmt, frame->width
-                  , frame->height);
+   avpicture_alloc( (AVPicture*)newFrame, d->codecContext->pix_fmt, d->codecContext->width
+                  , d->codecContext->height);
    sws_scale( d->scaler, frame->data, frame->linesize, 0, frame->height
             , newFrame->data, newFrame->linesize);
-   newFrame->width = frame->width;
-   newFrame->height = frame->height;
+   newFrame->width = d->codecContext->width;
+   newFrame->height = d->codecContext->height;
    newFrame->pts = frame->pts;
 
    QList<QByteArray> packets;    
