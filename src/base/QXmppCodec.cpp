@@ -502,6 +502,8 @@ bool QXmppFFmpegEncoder::setFormat(const QXmppVideoFormat &format)
     d->codecContext->gop_size = format.gopSize();
     d->codecContext->bit_rate = format.bitrate();
     d->codecContext->strict_std_compliance = -2;
+    d->codecContext->max_b_frames = 0;
+    d->codecContext->thread_count = 2;
     if(format.qscale() > 0) {
        d->codecContext->flags |= CODEC_FLAG_QSCALE;
        d->codecContext->global_quality = FF_QP2LAMBDA * format.qscale();
@@ -518,7 +520,7 @@ bool QXmppFFmpegEncoder::setFormat(const QXmppVideoFormat &format)
 
 QList<QByteArray> QXmppFFmpegEncoder::handleFrame(AVFrame *frame)
 {
-   QMutexLocker(&d->formatLocker);
+   d->formatLocker.lock();
    AVFrame* newFrame = avcodec_alloc_frame();
    d->scaler = sws_getCachedContext( d->scaler, frame->width, frame->height
                                 , (PixelFormat)frame->format
@@ -537,11 +539,15 @@ QList<QByteArray> QXmppFFmpegEncoder::handleFrame(AVFrame *frame)
    av_init_packet(pkt);
    pkt->size = 0;
    int got_packet = 0;
-   if(avcodec_encode_video2(d->codecContext,pkt,newFrame,&got_packet) < 0) return packets;
-   if(!got_packet) { av_free_packet(pkt); return packets; }
+   if(avcodec_encode_video2(d->codecContext,pkt,newFrame,&got_packet) < 0) {
+      d->formatLocker.unlock();
+      return packets;
+   }
+   if(!got_packet) { av_free_packet(pkt); d->formatLocker.unlock(); return packets; }
    QByteArray packet((const char*)pkt->data,pkt->size);
    packets << packet;
    av_free_packet(pkt);
+   d->formatLocker.unlock();
    avpicture_free((AVPicture*)newFrame);
    av_free(newFrame);
    return packets;
