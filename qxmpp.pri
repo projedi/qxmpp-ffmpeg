@@ -48,7 +48,11 @@ contains(QXMPP_LIBRARY_TYPE,staticlib) {
 
 # Installation prefix and library directory
 isEmpty(PREFIX) {
-    unix:PREFIX=/usr/local/x86_64-unknown-linux-gnu
+    contains(MEEGO_EDITION,harmattan) {
+        PREFIX = /usr
+    } else:unix {
+        PREFIX = /usr/local/x86_64-unknown-linux-gnu
+    }
 }
 isEmpty(LIBDIR) {
     LIBDIR=lib
