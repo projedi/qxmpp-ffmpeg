@@ -235,6 +235,9 @@ void QXmppPresence::parse(const QDomElement &element)
             d->capabilityHash = xElement.attribute("hash");
             d->capabilityExt = xElement.attribute("ext").split(" ", QString::SkipEmptyParts);
         }
+        else if (xElement.tagName() == "addresses")
+        {
+        }
         else if (xElement.tagName() == "error")
         {
         }
@@ -316,8 +319,8 @@ void QXmppPresence::toXml(QXmlStreamWriter *xmlWriter) const
         xmlWriter->writeEndElement();
     }
 
-    foreach (const QXmppElement &extension, extensions())
-        extension.toXml(xmlWriter);
+    // other extensions
+    QXmppStanza::extensionsToXml(xmlWriter);
 
     xmlWriter->writeEndElement();
 }

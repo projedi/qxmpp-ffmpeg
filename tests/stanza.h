@@ -1,8 +1,7 @@
 /*
  * Copyright (C) 2008-2012 The QXmpp developers
  *
- * Authors:
- *  Olivier Goffart
+ * Author:
  *  Jeremy Lainé
  *
  * Source:
@@ -24,15 +23,12 @@
 
 #include <QObject>
 
-class tst_QXmppPresence : public QObject
+class tst_QXmppStanza : public QObject
 {
     Q_OBJECT
 
 private slots:
-    void testPresence();
-    void testPresence_data();
-    void testPresenceWithCapability();
-    void testPresenceWithExtendedAddresses();
-    void testPresenceWithMuc();
+    void testExtendedAddress_data();
+    void testExtendedAddress();
 };
 

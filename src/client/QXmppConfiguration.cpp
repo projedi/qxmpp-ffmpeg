@@ -43,6 +43,9 @@ public:
     QString facebookAccessToken;
     QString facebookAppId;
 
+    // Windows Live
+    QString windowsLiveAccessToken;
+
     // default is false
     bool autoAcceptSubscriptions;
     // default is true
@@ -55,10 +58,9 @@ public:
     int keepAliveTimeout;
     // will keep reconnecting if disconnected, default is true
     bool autoReconnectionEnabled;
-    bool useSASLAuthentication; ///< flag to specify what authentication system
-                                  ///< to be used
-                                ///< defualt is true and use SASL
-                                ///< false would use NonSASL if available
+    // which authentication systems to use (if any)
+    bool useSASLAuthentication;
+    bool useNonSASLAuthentication;
     // default is true
     bool ignoreSslErrors;
 
@@ -81,6 +83,7 @@ QXmppConfigurationPrivate::QXmppConfigurationPrivate()
     , keepAliveTimeout(20)
     , autoReconnectionEnabled(true)
     , useSASLAuthentication(true)
+    , useNonSASLAuthentication(true)
     , ignoreSslErrors(true)
     , streamSecurityMode(QXmppConfiguration::TLSEnabled)
     , nonSASLAuthMechanism(QXmppConfiguration::NonSASLDigest)
@@ -328,6 +331,25 @@ void QXmppConfiguration::setFacebookAppId(const QString& appId)
     d->facebookAppId = appId;
 }
 
+/// Returns the access token used for X-MESSENGER-OAUTH2 authentication.
+
+QString QXmppConfiguration::windowsLiveAccessToken() const
+{
+    return d->windowsLiveAccessToken;
+}
+
+/// Sets the access token used for X-MESSENGER-OAUTH2 authentication.
+///
+/// This token is returned by Windows Live at the end of the OAuth authentication
+/// process.
+///
+/// \param accessToken
+
+void QXmppConfiguration::setWindowsLiveAccessToken(const QString& accessToken)
+{
+    d->windowsLiveAccessToken = accessToken;
+}
+
 /// Returns the auto-accept-subscriptions-request configuration.
 ///
 /// \return boolean value
@@ -388,23 +410,32 @@ void QXmppConfiguration::setIgnoreSslErrors(bool value)
     d->ignoreSslErrors = value;
 }
 
-/// Returns the type of authentication system specified by the user.
-/// \return true if SASL was specified else false. If the specified
-/// system is not available QXmpp will resort to the other one.
+/// Returns whether to make use of SASL authentication.
 
 bool QXmppConfiguration::useSASLAuthentication() const
 {
     return d->useSASLAuthentication;
 }
 
-/// Returns the type of authentication system specified by the user.
-/// \param useSASL to hint to use SASL authentication system if available.
-/// false will specify to use NonSASL XEP-0078: Non-SASL Authentication
-/// If the specified one is not availbe, library will use the othe one
+/// Sets whether to make use of SASL authentication.
 
 void QXmppConfiguration::setUseSASLAuthentication(bool useSASL)
 {
     d->useSASLAuthentication = useSASL;
+}
+
+/// Returns whether to make use of non-SASL authentication.
+
+bool QXmppConfiguration::useNonSASLAuthentication() const
+{
+    return d->useNonSASLAuthentication;
+}
+
+/// Sets whether to make use of non-SASL authentication.
+
+void QXmppConfiguration::setUseNonSASLAuthentication(bool useNonSASL)
+{
+    d->useNonSASLAuthentication = useNonSASL;
 }
 
 /// Returns the specified security mode for the stream. The default value is
@@ -543,40 +574,3 @@ QList<QSslCertificate> QXmppConfiguration::caCertificates() const
 {
     return d->caCertificates;
 }
-
-// obsolete
-
-/// \cond
-QXmppConfiguration::SASLAuthMechanism QXmppConfiguration::sASLAuthMechanism() const
-{
-    if (d->saslAuthMechanism == "PLAIN")
-        return SASLPlain;
-    else if (d->saslAuthMechanism == "DIGEST-MD5")
-        return SASLDigestMD5;
-    else if (d->saslAuthMechanism == "ANONYMOUS")
-        return SASLAnonymous;
-    else if (d->saslAuthMechanism == "X-FACEBOOK-PLATFORM")
-        return SASLXFacebookPlatform;
-    else
-        return SASLDigestMD5;
-}
-
-void QXmppConfiguration::setSASLAuthMechanism(
-        QXmppConfiguration::SASLAuthMechanism mech)
-{
-    switch (mech) {
-    case QXmppConfiguration::SASLPlain:
-        d->saslAuthMechanism = "PLAIN";
-        break;
-    case QXmppConfiguration::SASLDigestMD5:
-        d->saslAuthMechanism = "DIGEST-MD5";
-        break;
-    case QXmppConfiguration::SASLAnonymous:
-        d->saslAuthMechanism = "ANONYMOUS";
-        break;
-    case QXmppConfiguration::SASLXFacebookPlatform:
-        d->saslAuthMechanism = "X-FACEBOOK-PLATFORM";
-        break;
-    }
-}
-/// \endcond

@@ -1,7 +1,7 @@
 # Common definitions
 
 QT += network xml
-QXMPP_VERSION = 0.6.3
+QXMPP_VERSION = 0.7.1
 QXMPP_INCLUDEPATH = $$PWD/src/base $$PWD/src/client $$PWD/src/server
 
 # Determine library name
@@ -52,10 +52,12 @@ isEmpty(PREFIX) {
         PREFIX = /usr
     } else:unix {
         PREFIX = /usr/local/x86_64-unknown-linux-gnu
+    } else {
+        PREFIX = $$[QT_INSTALL_PREFIX]
     }
 }
 isEmpty(LIBDIR) {
-    LIBDIR=lib
+    LIBDIR = lib
 }
 
 # Internal API auto-tests

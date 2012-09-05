@@ -107,6 +107,9 @@ public:
     QString facebookAppId() const;
     void setFacebookAppId(const QString&);
 
+    QString windowsLiveAccessToken() const;
+    void setWindowsLiveAccessToken(const QString &accessToken);
+
     bool autoAcceptSubscriptions() const;
     void setAutoAcceptSubscriptions(bool);
 
@@ -115,6 +118,9 @@ public:
 
     bool useSASLAuthentication() const;
     void setUseSASLAuthentication(bool);
+
+    bool useNonSASLAuthentication() const;
+    void setUseNonSASLAuthentication(bool);
 
     bool ignoreSslErrors() const;
     void setIgnoreSslErrors(bool);
@@ -139,19 +145,6 @@ public:
 
     QList<QSslCertificate> caCertificates() const;
     void setCaCertificates(const QList<QSslCertificate> &);
-
-    /// \cond
-    // deprecated since 0.6.0
-    enum SASLAuthMechanism
-    {
-        SASLPlain = 0,
-        SASLDigestMD5,
-        SASLAnonymous,
-        SASLXFacebookPlatform
-    };
-    QXmppConfiguration::SASLAuthMechanism Q_DECL_DEPRECATED sASLAuthMechanism() const;
-    void Q_DECL_DEPRECATED setSASLAuthMechanism(QXmppConfiguration::SASLAuthMechanism);
-    /// \endcond
 
 private:
     QSharedDataPointer<QXmppConfigurationPrivate> d;

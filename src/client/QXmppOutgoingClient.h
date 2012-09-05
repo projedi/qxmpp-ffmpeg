@@ -53,6 +53,7 @@ public:
     ~QXmppOutgoingClient();
 
     void connectToHost();
+    bool isAuthenticated() const;
     bool isConnected() const;
 
     QSslSocket *socket() const { return QXmppStream::socket(); };
@@ -86,6 +87,7 @@ protected:
 
 private slots:
     void _q_dnsLookupFinished();
+    void _q_socketDisconnected();
     void socketError(QAbstractSocket::SocketError);
     void socketSslErrors(const QList<QSslError>&);
 

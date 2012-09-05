@@ -1,7 +1,27 @@
-QXmpp 0.6.4 (UNRELEASED)
-------------------------
+QXmpp 0.7.2 (Unreleased)
+-------------------------
+
+  - Handle Error replies in QXmppDiscoveryManager so that library users can know
+    about errors.
+  - If building with Qt 5, use Qt's QDnsLookup instead of our backport.
+
+QXmpp 0.7.1 (Sep 3, 2012)
+-------------------------
+
+  - Fix export of QXmppVCardPhone class.
+
+QXmpp 0.7.0 (Sep 3, 2012)
+-------------------------
+
+  - New XEPs:
+    * XEP-0033: Extended Stanza Addressing
+
+  - Remove deprecated APIs:
+    * QXmppRosterManager::rosterChanged()
+    * QXmppConfiguration::sASLAuthMechanism()
 
   - Improve vCard support:
+    * Add support for free-form descriptive text.
     * Make it possible to have several addresses.
     * Make it possible to have several e-mail addresses.
     * Make it possible to have several phone numbers.
@@ -10,7 +30,11 @@ QXmpp 0.6.4 (UNRELEASED)
   - Fix XEP-0115 verification strings (remove duplicate features, sort form values)
   - Fix issues:
     * Issue 144: QXmppBookmarkConference autojoin parsing
-  - Remove deprecated QXmppRosterManager::rosterChanged().
+  - Add support for see-other-host server change.
+  - Add support for X-MESSENGER-OAUTH2 authentication for Windows Live Messenger.
+  - Make it possible to disable non-SASL authentication.
+  - Add QXmppClient::isAuthenticated() to query whether authentication has been
+    performed.
 
 QXmpp 0.6.3 (Jul 24, 2012)
 --------------------------

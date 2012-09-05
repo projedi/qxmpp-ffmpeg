@@ -1,8 +1,10 @@
 /*
  * Copyright (C) 2008-2012 The QXmpp developers
  *
- * Author:
+ * Authors:
  *  Manjeet Dahiya
+ *  Jeremy Lainé
+ *  Georg Rudoy
  *
  * Source:
  *  http://code.google.com/p/qxmpp
@@ -36,6 +38,46 @@
 #include <QXmlStreamWriter>
 
 #include "QXmppElement.h"
+
+class QXmppExtendedAddressPrivate;
+
+/// \brief Represents an extended address as defined by XEP-0033: Extended Stanza Addressing.
+///
+/// Extended addresses maybe of different types: some are defined by XEP-0033,
+/// others are defined in separate XEPs (for instance XEP-0146: Remote Controlling Clients).
+/// That is why the "type" property is a string rather than an enumerated type.
+
+class QXMPP_EXPORT QXmppExtendedAddress
+{
+public:
+    QXmppExtendedAddress();
+    QXmppExtendedAddress(const QXmppExtendedAddress&);
+    ~QXmppExtendedAddress();
+
+    QXmppExtendedAddress& operator=(const QXmppExtendedAddress&);
+
+    QString description() const;
+    void setDescription(const QString &description);
+
+    QString jid() const;
+    void setJid(const QString &jid);
+
+    QString type() const;
+    void setType(const QString &type);
+
+    bool isDelivered() const;
+    void setDelivered(bool);
+
+    bool isValid() const;
+
+    /// \cond
+    void parse(const QDomElement &element);
+    void toXml(QXmlStreamWriter *writer) const;
+    /// \endcond
+
+private:
+    QSharedDataPointer<QXmppExtendedAddressPrivate> d;
+};
 
 class QXmppStanzaPrivate;
 
@@ -144,11 +186,15 @@ public:
     QXmppElementList extensions() const;
     void setExtensions(const QXmppElementList &elements);
 
+    QList<QXmppExtendedAddress> extendedAddresses() const;
+    void setExtendedAddresses(const QList<QXmppExtendedAddress> &extendedAddresses);
+
     /// \cond
     virtual void parse(const QDomElement &element);
     virtual void toXml(QXmlStreamWriter *writer) const = 0;
 
 protected:
+    void extensionsToXml(QXmlStreamWriter *writer) const;
     void generateAndSetNextId();
     /// \endcond
 

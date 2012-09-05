@@ -25,7 +25,11 @@
 #include <QSslKey>
 #include <QSslSocket>
 #include <QTimer>
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
+#include <QDnsLookup>
+#else
 #include "qdnslookup.h"
+#endif
 
 #include "QXmppConstants.h"
 #include "QXmppDialback.h"
@@ -63,6 +67,10 @@ QXmppOutgoingServer::QXmppOutgoingServer(const QString &domain, QObject *parent)
     // socket initialisation
     QSslSocket *socket = new QSslSocket(this);
     setSocket(socket);
+
+    check = connect(socket, SIGNAL(disconnected()),
+                    this, SLOT(_q_socketDisconnected()));
+    Q_ASSERT(check);
 
     check = connect(socket, SIGNAL(error(QAbstractSocket::SocketError)),
                     this, SLOT(socketError(QAbstractSocket::SocketError)));
@@ -132,6 +140,12 @@ void QXmppOutgoingServer::_q_dnsLookupFinished()
     // connect to server
     info(QString("Connecting to %1:%2").arg(host, QString::number(port)));
     socket()->connectToHost(host, port);
+}
+
+void QXmppOutgoingServer::_q_socketDisconnected()
+{
+    debug("Socket disconnected");
+    emit disconnected();
 }
 
 /// \cond
